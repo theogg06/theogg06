@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BNR – Demo Widget Feedback</title>
+  <link rel="stylesheet" href="feedback-widget.css" />
+
+  <!-- Demo page styling only — not part of the widget -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f6fb;
+      color: #1a1a2e;
+      padding-bottom: 120px; /* clearance for fixed widget */
+    }
+
+    /* ---- BNR-like header ---- */
+    header {
+      background: #003087;
+      color: #fff;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      height: 72px;
+      border-bottom: 4px solid #FFD700;
+    }
+
+    header .logo-placeholder {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #003087;
+      font-size: 13px;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    header p {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    /* ---- Content ---- */
+    main {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    .demo-card {
+      background: #fff;
+      border-radius: 6px;
+      padding: 32px 36px;
+      box-shadow: 0 1px 8px rgba(0,48,135,0.08);
+      margin-bottom: 24px;
+    }
+
+    .demo-card h2 {
+      font-size: 22px;
+      color: #003087;
+      margin-bottom: 12px;
+      border-left: 4px solid #FFD700;
+      padding-left: 12px;
+    }
+
+    .demo-card p {
+      line-height: 1.65;
+      font-size: 15px;
+      color: #444;
+    }
+
+    /* ---- Reset demo button ---- */
+    .demo-reset {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 9px 22px;
+      background: #003087;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .demo-reset:hover { background: #00205c; }
+
+    .demo-note {
+      font-size: 13px;
+      color: #777;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fake BNR header -->
+  <header>
+    <div class="logo-placeholder">BNR</div>
+    <div>
+      <h1>Banca Națională a României</h1>
+      <p>Bancă Centrală · Stabilitate · Transparență</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="demo-card">
+      <h2>Widget Feedback – Pagina demo</h2>
+      <p>
+        Aceasta este o pagină de demonstrație pentru widget-ul de feedback BNR.
+        Widget-ul apare fixat în partea de jos a ecranului după <strong>1,5 secunde</strong>
+        de la încărcarea paginii. El rămâne vizibil pe toate paginile site-ului și se
+        ascunde automat după ce utilizatorul oferă un răspuns.
+      </p>
+      <br />
+      <p>
+        Feedback-ul colectat include: tipul de răspuns (<em>Da / Nu</em>), motivul
+        nemulțumirii (dacă e cazul) și URL-ul paginii curente. Datele sunt trimise
+        la endpoint-ul configurat prin <code>window.BNR_FEEDBACK_CONFIG.endpoint</code>.
+      </p>
+
+      <button class="demo-reset" onclick="resetDemo()">↺ Resetează widget (demo)</button>
+      <p class="demo-note">Butonul de mai sus șterge cooldown-ul din localStorage și reîncarcă widget-ul.</p>
+    </div>
+
+    <div class="demo-card">
+      <h2>Integrare în site</h2>
+      <p>Adaugă cele două linii înainte de <code>&lt;/body&gt;</code> pe fiecare pagină:</p>
+      <br />
+      <pre style="background:#f0f3f8;padding:16px;border-radius:4px;font-size:13px;overflow:auto;">&lt;link rel="stylesheet" href="/assets/feedback-widget.css" /&gt;
+
+&lt;!-- Opțional: configurare --&gt;
+&lt;script&gt;
+  window.BNR_FEEDBACK_CONFIG = {
+    endpoint:     '/api/feedback',  // URL-ul backend-ului tău
+    cooldownDays: 30,               // nu mai arăta widgetul timp de 30 zile
+    showDelayMs:  1500              // apare după 1.5s de la încărcare
+  };
+&lt;/script&gt;
+
+&lt;script src="/assets/feedback-widget.js"&gt;&lt;/script&gt;</pre>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       Widget configuration (for demo: no real endpoint)
+       ============================================================ -->
+  <script>
+    window.BNR_FEEDBACK_CONFIG = {
+      endpoint:     null,   /* null = log only to console */
+      cooldownDays: 0,      /* 0 = always show (demo mode) */
+      showDelayMs:  1500,
+    };
+  </script>
+
+  <!-- Widget files -->
+  <script src="feedback-widget.js"></script>
+
+  <!-- Demo helper: reset widget without reloading -->
+  <script>
+    function resetDemo() {
+      localStorage.removeItem('bnr_feedback_sent');
+      var existing = document.getElementById('bnr-feedback');
+      if (existing) existing.remove();
+      /* re-trigger init after a short pause */
+      setTimeout(function () {
+        var s = document.createElement('script');
+        s.src = 'feedback-widget.js?v=' + Date.now();
+        document.body.appendChild(s);
+      }, 200);
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BNR – Widget Feedback · Prezentare vizuală</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bnr-blue:      #003A5D;
+      --bnr-blue-mid:  #004a70;
+      --bnr-blue-dark: #002440;
+      --bnr-gold:      #F7941D;
+      --bnr-white:     #ffffff;
+      --bnr-bg:        #eef2f9;
+      --bnr-card:      #ffffff;
+      --bnr-text:      #1a1a2e;
+      --bnr-muted:     #5a6478;
+      --bnr-border:    #ccd3e0;
+      --radius:        6px;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bnr-bg);
+      color: var(--bnr-text);
+      min-height: 100vh;
+    }
+
+    /* ===== Header ===== */
+    .pres-header {
+      background: var(--bnr-blue);
+      color: var(--bnr-white);
+      padding: 28px 48px 24px;
+      border-bottom: 4px solid var(--bnr-gold);
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .pres-header .logo {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: var(--bnr-white);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: var(--bnr-blue);
+      font-size: 15px; letter-spacing: -0.5px;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(255,215,0,0.5);
+    }
+
+    .pres-header h1 { font-size: 22px; font-weight: 700; }
+    .pres-header p  { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+
+    .pres-header .badge {
+      margin-left: auto;
+      background: var(--bnr-gold);
+      color: var(--bnr-blue-dark);
+      font-size: 12px; font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ===== Main layout ===== */
+    main {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 32px 80px;
+    }
+
+    /* ===== Section title ===== */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--bnr-blue);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--bnr-border);
+    }
+
+    /* ===== Intro description ===== */
+    .intro {
+      background: var(--bnr-white);
+      border-left: 4px solid var(--bnr-gold);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 36px;
+      font-size: 14.5px;
+      line-height: 1.65;
+      color: var(--bnr-muted);
+      box-shadow: 0 1px 6px rgba(0,48,135,0.06);
+    }
+
+    .intro strong { color: var(--bnr-blue); }
+
+    /* ===== States grid ===== */
+    .states-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    .state-card {
+      background: var(--bnr-card);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px rgba(0,48,135,0.09);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .state-card-header {
+      background: var(--bnr-blue);
+      color: var(--bnr-white);
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .state-card-header .step-num {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--bnr-gold);
+      color: var(--bnr-blue-dark);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .state-card-body {
+      padding: 20px 18px;
+      flex: 1;
+    }
+
+    /* ===== Mini widget mockup inside card ===== */
+    .mini-widget {
+      background: #f7f9fd;
+      border: 1.5px solid var(--bnr-border);
+      border-top: 3px solid var(--bnr-gold);
+      border-radius: 4px;
+      padding: 14px 14px 12px;
+    }
+
+    .mini-widget .mw-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mini-widget .mw-icon {
+      width: 30px; height: 30px;
+      border: 1.5px solid var(--bnr-blue);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--bnr-blue);
+    }
+
+    .mini-widget .mw-icon svg {
+      width: 14px; height: 14px;
+      fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .mini-widget .mw-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--bnr-blue);
+      flex: 1 1 100px;
+    }
+
+    .mini-widget .mw-btns {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .mini-widget .mw-btn {
+      padding: 5px 11px;
+      border: 1.5px solid var(--bnr-blue);
+      border-radius: 3px;
+      background: transparent;
+      color: var(--bnr-blue);
+      font-size: 11px; font-weight: 700;
+      cursor: default;
+      white-space: nowrap;
+    }
+
+    .mini-widget .mw-btn.active {
+      background: var(--bnr-blue);
+      color: var(--bnr-white);
+    }
+
+    .mini-widget .mw-textarea {
+      width: 100%;
+      height: 40px;
+      border: 1.5px solid var(--bnr-border);
+      border-radius: 3px;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-family: inherit;
+      color: #999;
+      background: #fff;
+      resize: none;
+    }
+
+    .mini-widget .mw-thanks {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--bnr-blue);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .mini-widget .mw-thanks .check {
+      width: 18px; height: 18px;
+      background: var(--bnr-blue);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+    }
+
+    .mini-widget .mw-close {
+      position: absolute;
+      top: 8px; right: 10px;
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .state-card-body .desc {
+      margin-top: 12px;
+      font-size: 12.5px;
+      color: var(--bnr-muted);
+      line-height: 1.55;
+    }
+
+    /* ===== Flow diagram ===== */
+    .flow-wrap {
+      background: var(--bnr-white);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px rgba(0,48,135,0.09);
+      padding: 28px 32px;
+      margin-bottom: 48px;
+    }
+
+    .flow {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .flow-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .flow-box {
+      background: var(--bnr-blue);
+      color: var(--bnr-white);
+      border-radius: var(--radius);
+      padding: 11px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+      min-width: 110px;
+      max-width: 130px;
+    }
+
+    .flow-box.gold {
+      background: var(--bnr-gold);
+      color: var(--bnr-blue-dark);
+    }
+
+    .flow-box.green {
+      background: #2e7d32;
+    }
+
+    .flow-label {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--bnr-muted);
+    }
+
+    .flow-arrow {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      padding-bottom: 22px;
+    }
+
+    .flow-arrow .arr-label {
+      font-size: 10px;
+      color: var(--bnr-muted);
+      margin-bottom: 2px;
+      white-space: nowrap;
+    }
+
+    .flow-arrow .arr-line {
+      width: 30px;
+      height: 2px;
+      background: var(--bnr-border);
+      position: relative;
+    }
+
+    .flow-arrow .arr-line::after {
+      content: "▶";
+      position: absolute;
+      right: -8px;
+      top: -7px;
+      font-size: 10px;
+      color: var(--bnr-border);
+    }
+
+    /* ===== Features table ===== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+
+    .feat-card {
+      background: var(--bnr-white);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: 0 1px 6px rgba(0,48,135,0.07);
+      border-left: 3px solid var(--bnr-gold);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .feat-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .feat-card h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--bnr-blue);
+      margin-bottom: 4px;
+    }
+
+    .feat-card p {
+      font-size: 12px;
+      color: var(--bnr-muted);
+      line-height: 1.5;
+    }
+
+    /* ===== Integration snippet ===== */
+    .integration-wrap {
+      background: var(--bnr-white);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px rgba(0,48,135,0.09);
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+
+    .integration-wrap .int-title {
+      background: var(--bnr-blue-dark);
+      color: var(--bnr-white);
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .integration-wrap pre {
+      padding: 20px 24px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #1a1a2e;
+      background: #f7f9fd;
+      overflow-x: auto;
+    }
+
+    .integration-wrap pre .c  { color: #6a9955; }  /* comment */
+    .integration-wrap pre .t  { color: #800000; }  /* tag */
+    .integration-wrap pre .a  { color: #0070c1; }  /* attribute */
+    .integration-wrap pre .s  { color: #a31515; }  /* string */
+    .integration-wrap pre .k  { color: #af00db; }  /* keyword */
+
+    /* ===== Full-size live mockup ===== */
+    .live-wrap {
+      background: var(--bnr-white);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px rgba(0,48,135,0.09);
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+
+    .live-wrap .lw-title {
+      background: var(--bnr-blue);
+      color: var(--bnr-white);
+      padding: 13px 22px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .live-wrap .lw-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--bnr-gold);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    .live-browser {
+      background: #e8ecf5;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--bnr-border);
+    }
+
+    .live-browser .dots span {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 3px;
+    }
+
+    .live-browser .dots .r { background: #ff5f57; }
+    .live-browser .dots .y { background: #febc2e; }
+    .live-browser .dots .g { background: #28c840; }
+
+    .live-browser .url-bar {
+      flex: 1;
+      background: #fff;
+      border: 1px solid var(--bnr-border);
+      border-radius: 12px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--bnr-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .live-browser .url-bar .lock { font-size: 10px; color: #2e7d32; }
+
+    .live-page {
+      background: #f0f4fb;
+      min-height: 200px;
+      padding: 24px 30px 90px;
+    }
+
+    .live-page .page-content {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .live-page h2 {
+      font-size: 20px;
+      color: var(--bnr-blue-dark);
+      border-left: 3px solid var(--bnr-gold);
+      padding-left: 10px;
+      margin-bottom: 12px;
+    }
+
+    .live-page p {
+      font-size: 13px;
+      color: var(--bnr-muted);
+      line-height: 1.6;
+    }
+
+    /* ===== Interactive widget (full size) ===== */
+    #lw-widget {
+      border-top: 3px solid var(--bnr-gold);
+      background: var(--bnr-white);
+      box-shadow: 0 -2px 12px rgba(0,48,135,0.12);
+    }
+
+    .lw-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    .lw-icon {
+      width: 34px; height: 34px;
+      border: 2px solid var(--bnr-blue);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--bnr-blue);
+      flex-shrink: 0;
+    }
+
+    .lw-icon svg {
+      width: 16px; height: 16px;
+      fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .lw-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bnr-blue);
+      flex-shrink: 0;
+    }
+
+    .lw-step { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; animation: lwFade .3s ease both; }
+    .lw-step[hidden] { display: none; }
+
+    @keyframes lwFade {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .lw-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .lw-btn {
+      padding: 7px 18px;
+      border: 2px solid var(--bnr-blue);
+      border-radius: 3px;
+      background: transparent;
+      color: var(--bnr-blue);
+      font-size: 13px; font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      white-space: nowrap;
+    }
+
+    .lw-btn:hover { background: var(--bnr-blue); color: #fff; }
+
+    .lw-textarea-wrap { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+
+    .lw-textarea {
+      flex: 1 1 200px;
+      min-height: 52px;
+      padding: 7px 9px;
+      border: 2px solid var(--bnr-border);
+      border-radius: 3px;
+      font-size: 13px; font-family: inherit;
+      resize: vertical;
+      transition: border-color .2s;
+    }
+
+    .lw-textarea:focus { border-color: var(--bnr-blue); outline: none; }
+
+    .lw-btn-send {
+      background: var(--bnr-blue);
+      color: #fff;
+      border-color: var(--bnr-blue);
+      align-self: flex-end;
+    }
+
+    .lw-btn-send:hover { background: var(--bnr-blue-dark); border-color: var(--bnr-blue-dark); color: #fff; }
+
+    .lw-thanks {
+      font-size: 14px; font-weight: 700; color: var(--bnr-blue);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .lw-thanks .check {
+      width: 22px; height: 22px;
+      background: var(--bnr-blue); color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+    }
+
+    .lw-close {
+      position: absolute; top: 50%; right: 14px;
+      transform: translateY(-50%);
+      background: none; border: none;
+      cursor: pointer; color: #aaa;
+      font-size: 18px; padding: 4px 6px;
+      border-radius: 3px;
+      transition: color .2s;
+    }
+
+    .lw-close:hover { color: var(--bnr-blue); }
+
+    .reset-bar {
+      text-align: center;
+      padding: 10px;
+      background: #f0f4fb;
+      font-size: 12px;
+      color: var(--bnr-muted);
+      border-top: 1px solid var(--bnr-border);
+    }
+
+    .reset-bar button {
+      background: none; border: none;
+      color: var(--bnr-blue);
+      font-size: 12px; font-weight: 700;
+      cursor: pointer; text-decoration: underline;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      background: var(--bnr-blue-dark);
+      color: rgba(255,255,255,0.6);
+      text-align: center;
+      padding: 18px;
+      font-size: 12px;
+    }
+
+    footer span { color: var(--bnr-gold); }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header class="pres-header">
+  <div class="logo">BNR</div>
+  <div>
+    <h1>Banca Națională a României</h1>
+    <p>Widget Feedback — Prezentare vizuală</p>
+  </div>
+  <div class="badge">Propunere UI 2026</div>
+</header>
+
+<main>
+
+  <!-- ============================================================
+       INTRO
+       ============================================================ -->
+  <p class="intro">
+    Widget de colectare feedback vizibil pe <strong>fiecare pagină</strong> a site-ului BNR.
+    Fixat în bara de jos, non-intruziv, cu <strong>flux în 4 pași</strong>
+    (întrebare inițială → motive → text liber → confirmare).
+    Datele sunt trimise la un endpoint configurat și nu mai apare timp de <strong>30 de zile</strong>
+    după ce utilizatorul oferă un răspuns.
+  </p>
+
+  <!-- ============================================================
+       STĂRILE WIDGET-ULUI
+       ============================================================ -->
+  <div class="section-title">Stările widget-ului</div>
+
+  <div class="states-grid">
+
+    <!-- STAREA 1 -->
+    <div class="state-card">
+      <div class="state-card-header">
+        <div class="step-num">1</div>
+        Întrebare inițială
+      </div>
+      <div class="state-card-body">
+        <div class="mini-widget" style="position:relative;">
+          <span class="mw-close">&#x2715;</span>
+          <div class="mw-inner">
+            <div class="mw-icon">
+              <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="mw-title">Ești mulțumit de această pagină?</div>
+            <div class="mw-btns">
+              <div class="mw-btn">Da</div>
+              <div class="mw-btn">Nu</div>
+            </div>
+          </div>
+        </div>
+        <p class="desc">Apare fixat în josul ecranului după 1.5s de la încărcarea paginii.</p>
+      </div>
+    </div>
+
+    <!-- STAREA 2 -->
+    <div class="state-card">
+      <div class="state-card-header">
+        <div class="step-num">2</div>
+        Motive nemulțumire
+      </div>
+      <div class="state-card-body">
+        <div class="mini-widget">
+          <div class="mw-inner">
+            <div class="mw-title">Ce nu ți-a plăcut?</div>
+            <div class="mw-btns">
+              <div class="mw-btn">Pagina nu funcționează</div>
+              <div class="mw-btn">Informația nu este folositoare</div>
+              <div class="mw-btn">Designul nu este atractiv</div>
+              <div class="mw-btn">Altceva</div>
+            </div>
+          </div>
+        </div>
+        <p class="desc">Apare doar dacă utilizatorul apasă <strong>„Nu"</strong>.</p>
+      </div>
+    </div>
+
+    <!-- STAREA 3 -->
+    <div class="state-card">
+      <div class="state-card-header">
+        <div class="step-num">3</div>
+        Text liber — Altceva
+      </div>
+      <div class="state-card-body">
+        <div class="mini-widget">
+          <div class="mw-inner">
+            <div class="mw-title">Spune-ne mai multe:</div>
+            <textarea class="mw-textarea" readonly placeholder="Descrie problema întâmpinată..."></textarea>
+            <div class="mw-btns" style="margin-top:6px;">
+              <div class="mw-btn active">Trimite</div>
+            </div>
+          </div>
+        </div>
+        <p class="desc">Câmp opțional de text liber dacă utilizatorul alege <strong>„Altceva"</strong>.</p>
+      </div>
+    </div>
+
+    <!-- STAREA 4 -->
+    <div class="state-card">
+      <div class="state-card-header">
+        <div class="step-num">4</div>
+        Confirmare
+      </div>
+      <div class="state-card-body">
+        <div class="mini-widget">
+          <div class="mw-inner">
+            <div class="mw-thanks">
+              <div class="check" style="width:18px;height:18px;background:#003A5D;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;">✓</div>
+              Mulțumim pentru feedback!
+            </div>
+          </div>
+        </div>
+        <p class="desc">Mesaj de confirmare, se închide automat după <strong>2.8 secunde</strong>.</p>
+      </div>
+    </div>
+
+  </div><!-- /states-grid -->
+
+  <!-- ============================================================
+       FLUX
+       ============================================================ -->
+  <div class="section-title">Fluxul utilizatorului</div>
+
+  <div class="flow-wrap">
+    <div class="flow">
+
+      <div class="flow-node">
+        <div class="flow-box">Widget apare<br/>după 1.5s</div>
+        <div class="flow-label">Pagina e încărcată</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arr-label"></div>
+        <div class="arr-line"></div>
+      </div>
+
+      <div class="flow-node">
+        <div class="flow-box gold">Da / Nu<br/>sau Închide</div>
+        <div class="flow-label">Starea 1</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arr-label">Da →</div>
+        <div class="arr-line"></div>
+      </div>
+
+      <div class="flow-node">
+        <div class="flow-box green">Mulțumim!<br/>Dispare în 2.8s</div>
+        <div class="flow-label">Starea 4</div>
+      </div>
+
+      <div class="flow-arrow" style="padding-left:24px;">
+        <div class="arr-label">Nu →</div>
+        <div class="arr-line"></div>
+      </div>
+
+      <div class="flow-node">
+        <div class="flow-box">4 motive<br/>de ales</div>
+        <div class="flow-label">Starea 2</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arr-label">Altceva →</div>
+        <div class="arr-line"></div>
+      </div>
+
+      <div class="flow-node">
+        <div class="flow-box">Text liber<br/>+ Trimite</div>
+        <div class="flow-label">Starea 3</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arr-label"></div>
+        <div class="arr-line"></div>
+      </div>
+
+      <div class="flow-node">
+        <div class="flow-box green">Mulțumim!<br/>Dispare în 2.8s</div>
+        <div class="flow-label">Starea 4</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       FEATURES
+       ============================================================ -->
+  <div class="section-title">Caracteristici tehnice</div>
+
+  <div class="features-grid">
+
+    <div class="feat-card">
+      <div class="feat-icon">📌</div>
+      <div>
+        <h3>Fixat în josul paginii</h3>
+        <p>Position: fixed — vizibil indiferent de scroll, pe orice pagină.</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🔁</div>
+      <div>
+        <h3>Cooldown 30 zile</h3>
+        <p>După feedback, widget-ul dispare pentru 30 de zile (localStorage).</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📡</div>
+      <div>
+        <h3>API endpoint</h3>
+        <p>Trimite datele via <code>fetch()</code> la orice URL backend configurat.</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">♿</div>
+      <div>
+        <h3>Accesibil WCAG 2.1</h3>
+        <p>ARIA labels, focus vizibil, navigare completă cu tastatura.</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📱</div>
+      <div>
+        <h3>Responsive</h3>
+        <p>Se adaptează pe orice rezoluție, inclusiv mobile.</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">⚡</div>
+      <div>
+        <h3>Zero dependențe</h3>
+        <p>Vanilla JS + CSS pur — fără jQuery, fără framework-uri.</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">✏️</div>
+      <div>
+        <h3>Text liber</h3>
+        <p>Opțiunea „Altceva" deschide un câmp pentru detalii suplimentare.</p>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🎨</div>
+      <div>
+        <h3>Identitate BNR</h3>
+        <p>Albastru <code>#003A5D</code> + auriu <code>#F7941D</code> — conform brand BNR.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       INTEGRARE
+       ============================================================ -->
+  <div class="section-title">Cod de integrare</div>
+
+  <div class="integration-wrap">
+    <div class="int-title">Adaugă înainte de &lt;/body&gt; pe fiecare pagină</div>
+    <pre><span class="c">&lt;!-- 1. Stiluri widget --&gt;</span>
+<span class="t">&lt;link</span> <span class="a">rel</span>=<span class="s">"stylesheet"</span> <span class="a">href</span>=<span class="s">"/assets/feedback-widget.css"</span> <span class="t">/&gt;</span>
+
+<span class="c">&lt;!-- 2. Configurare (opțional) --&gt;</span>
+<span class="t">&lt;script&gt;</span>
+  <span class="k">window</span>.BNR_FEEDBACK_CONFIG = {
+    endpoint:     <span class="s">'/api/feedback'</span>,  <span class="c">// URL-ul backend-ului</span>
+    cooldownDays: <span class="s">30</span>,               <span class="c">// nu mai arăta 30 de zile</span>
+    showDelayMs:  <span class="s">1500</span>,             <span class="c">// apare după 1.5s</span>
+  };
+<span class="t">&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- 3. Script widget --&gt;</span>
+<span class="t">&lt;script</span> <span class="a">src</span>=<span class="s">"/assets/feedback-widget.js"</span><span class="t">&gt;&lt;/script&gt;</span></pre>
+  </div>
+
+  <!-- ============================================================
+       DEMO INTERACTIV
+       ============================================================ -->
+  <div class="section-title">Demo interactiv</div>
+
+  <div class="live-wrap">
+    <div class="lw-title">
+      <div class="dot"></div>
+      Simulare pagină BNR — widget funcțional mai jos
+    </div>
+
+    <div class="live-browser">
+      <div class="dots">
+        <span class="r"></span><span class="y"></span><span class="g"></span>
+      </div>
+      <div class="url-bar">
+        <span class="lock">🔒</span>
+        bnr.ro / Politică monetară / Comunicat de presă
+      </div>
+    </div>
+
+    <div class="live-page">
+      <div class="page-content">
+        <h2>Comunicat privind rata dobânzii de politică monetară</h2>
+        <p>Consiliul de administrație al Băncii Naționale a României a hotărât, în ședința din luna mai 2026, menținerea ratei dobânzii de politică monetară la nivelul de 6,50% pe an. Această decizie reflectă necesitatea ancorării ferme a anticipațiilor inflaționiste pe termen mediu.</p>
+      </div>
+    </div>
+
+    <!-- Widget interactiv (full-size) -->
+    <div id="lw-widget">
+      <div class="lw-inner">
+
+        <!-- Starea 1 -->
+        <div class="lw-step" id="lw-s1">
+          <div class="lw-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span class="lw-title">Ești mulțumit de această pagină?</span>
+          <div class="lw-btns">
+            <button class="lw-btn" id="lw-yes">Da</button>
+            <button class="lw-btn" id="lw-no">Nu</button>
+          </div>
+        </div>
+
+        <!-- Starea 2 -->
+        <div class="lw-step" id="lw-s2" hidden>
+          <span class="lw-title">Ce nu ți-a plăcut?</span>
+          <div class="lw-btns">
+            <button class="lw-btn" data-r="broken">Pagina nu funcționează</button>
+            <button class="lw-btn" data-r="content">Informația nu este folositoare</button>
+            <button class="lw-btn" data-r="design">Designul nu este atractiv</button>
+            <button class="lw-btn" data-r="other">Altceva</button>
+          </div>
+        </div>
+
+        <!-- Starea 3 -->
+        <div class="lw-step" id="lw-s3" hidden>
+          <span class="lw-title">Spune-ne mai multe:</span>
+          <div class="lw-textarea-wrap">
+            <textarea class="lw-textarea" id="lw-txt" placeholder="Descrie problema întâmpinată..." maxlength="500"></textarea>
+            <button class="lw-btn lw-btn-send" id="lw-send">Trimite</button>
+          </div>
+        </div>
+
+        <!-- Starea 4 -->
+        <div class="lw-step" id="lw-s4" hidden>
+          <div class="lw-thanks">
+            <div class="check">✓</div>
+            Mulțumim pentru feedback!
+          </div>
+        </div>
+
+        <button class="lw-close" id="lw-close" title="Închide">&#x2715;</button>
+      </div>
+    </div>
+
+    <div class="reset-bar">
+      <button onclick="lwReset()">↺ Resetează demo</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== Footer ===== -->
+<footer>
+  Banca Națională a României &nbsp;·&nbsp; Widget Feedback &nbsp;·&nbsp;
+  <span>Propunere UI — 2026</span>
+</footer>
+
+<!-- ===== Interactive demo script ===== -->
+<script>
+  (function () {
+    function show(id) {
+      ['lw-s1','lw-s2','lw-s3','lw-s4'].forEach(function(s){
+        document.getElementById(s).hidden = (s !== id);
+      });
+    }
+
+    function thanks() {
+      show('lw-s4');
+    }
+
+    document.getElementById('lw-yes').onclick = thanks;
+
+    document.getElementById('lw-no').onclick = function () { show('lw-s2'); };
+
+    document.querySelectorAll('[data-r]').forEach(function (btn) {
+      btn.onclick = function () {
+        if (btn.dataset.r === 'other') { show('lw-s3'); document.getElementById('lw-txt').focus(); }
+        else thanks();
+      };
+    });
+
+    document.getElementById('lw-send').onclick = thanks;
+
+    document.getElementById('lw-close').onclick = function () {
+      var w = document.getElementById('lw-widget');
+      w.style.transition = 'opacity .3s, transform .3s';
+      w.style.opacity = '0';
+      w.style.transform = 'translateY(40px)';
+    };
+  })();
+
+  function lwReset() {
+    var w = document.getElementById('lw-widget');
+    w.style.transition = '';
+    w.style.opacity = '1';
+    w.style.transform = '';
+    ['lw-s1','lw-s2','lw-s3','lw-s4'].forEach(function(s,i){
+      document.getElementById(s).hidden = (i !== 0);
+    });
+    document.getElementById('lw-txt').value = '';
+  }
+</script>
+
+</body>
+</html>
