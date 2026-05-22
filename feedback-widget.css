@@ -1,0 +1,243 @@
+/* ============================================================
+   BNR Feedback Widget — feedback-widget.css
+   Integrate by adding <link rel="stylesheet" href="feedback-widget.css">
+   ============================================================ */
+
+/* ---------- Variables ---------- */
+:root {
+  --bnr-blue:        #003087;
+  --bnr-blue-dark:   #00205c;
+  --bnr-gold:        #FFD700;
+  --bnr-white:       #ffffff;
+  --bnr-text:        #1a1a2e;
+  --bnr-border:      #ccd3e0;
+  --bnr-radius:      4px;
+  --bnr-transition:  0.28s ease;
+}
+
+/* ---------- Host bar ---------- */
+#bnr-feedback {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: var(--bnr-white);
+  border-top: 3px solid var(--bnr-gold);
+  box-shadow: 0 -2px 14px rgba(0, 48, 135, 0.15);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  color: var(--bnr-text);
+}
+
+/* ---------- Inner wrapper ---------- */
+#bnr-feedback .bnr-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+/* ---------- Icon ---------- */
+#bnr-feedback .bnr-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--bnr-blue);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bnr-blue);
+}
+
+#bnr-feedback .bnr-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Title ---------- */
+#bnr-feedback .bnr-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--bnr-blue);
+  flex-shrink: 0;
+}
+
+/* ---------- Buttons area ---------- */
+#bnr-feedback .bnr-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Button base ---------- */
+#bnr-feedback .bnr-btn {
+  display: inline-block;
+  padding: 7px 20px;
+  border: 2px solid var(--bnr-blue);
+  border-radius: var(--bnr-radius);
+  background: transparent;
+  color: var(--bnr-blue);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--bnr-transition),
+    color var(--bnr-transition),
+    border-color var(--bnr-transition);
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+}
+
+#bnr-feedback .bnr-btn:hover,
+#bnr-feedback .bnr-btn:focus {
+  background: var(--bnr-blue);
+  color: var(--bnr-white);
+  outline: none;
+}
+
+#bnr-feedback .bnr-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.35);
+}
+
+/* ---------- Steps ---------- */
+#bnr-feedback .bnr-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  animation: bnrFadeIn var(--bnr-transition) both;
+}
+
+#bnr-feedback .bnr-step[hidden] {
+  display: none;
+}
+
+@keyframes bnrFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Thank-you message ---------- */
+#bnr-feedback .bnr-thanks {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bnr-blue);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#bnr-feedback .bnr-thanks::before {
+  content: "✓";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--bnr-blue);
+  color: var(--bnr-white);
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+/* ---------- Textarea (Altceva) ---------- */
+#bnr-feedback .bnr-textarea-wrap {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+#bnr-feedback textarea#bnr-other-text {
+  flex: 1 1 260px;
+  min-height: 60px;
+  padding: 8px 10px;
+  border: 2px solid var(--bnr-border);
+  border-radius: var(--bnr-radius);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color var(--bnr-transition);
+}
+
+#bnr-feedback textarea#bnr-other-text:focus {
+  border-color: var(--bnr-blue);
+  outline: none;
+}
+
+#bnr-feedback .bnr-btn-send {
+  padding: 7px 18px;
+  background: var(--bnr-blue);
+  color: var(--bnr-white);
+  border-color: var(--bnr-blue);
+  align-self: flex-end;
+}
+
+#bnr-feedback .bnr-btn-send:hover,
+#bnr-feedback .bnr-btn-send:focus {
+  background: var(--bnr-blue-dark);
+  border-color: var(--bnr-blue-dark);
+  color: var(--bnr-white);
+}
+
+/* ---------- Close button ---------- */
+#bnr-feedback .bnr-close {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a96a8;
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: var(--bnr-radius);
+  transition: color var(--bnr-transition);
+}
+
+#bnr-feedback .bnr-close:hover,
+#bnr-feedback .bnr-close:focus {
+  color: var(--bnr-blue);
+  outline: none;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 600px) {
+  #bnr-feedback .bnr-inner {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  #bnr-feedback .bnr-icon {
+    display: none;
+  }
+
+  #bnr-feedback .bnr-btn {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  #bnr-feedback .bnr-close {
+    top: 10px;
+    transform: none;
+    right: 10px;
+  }
+}
