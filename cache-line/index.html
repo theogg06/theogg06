@@ -1,0 +1,675 @@
+<title>Cache Line Fill</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one framed instrument card, centred, legend and caption beneath it. */
+:root {
+  --bg:#e9e7e1; --card:#f5f4f0; --ink:#23252a; --ink2:#62656c; --rule:#d2cfc7;
+  --lo-t:#e2dfd8; --lo-l:#cbc7be; --lo-r:#d6d2ca; --lo-s:#9a958b;
+  --mid-t:#efede8; --mid-l:#d3cfc7; --mid-r:#e0ddd6; --mid-s:#7c786e;
+  --hi-t:#ffffff; --hi-l:#dedbd4; --hi-r:#eeebe6; --hi-s:#4c4943;
+  --lit-t:#2b2d32; --lit-l:#0f1013; --lit-r:#1b1d21; --lit-s:#000000;
+  --faint:#c3bfb6; --halo:rgba(70,60,40,.22);
+  --f-display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0b0c0e; --card:#111316; --ink:#e6e8eb; --ink2:#868c95; --rule:#262a30;
+  --lo-t:#1b1e23; --lo-l:#111316; --lo-r:#16191d; --lo-s:#343941;
+  --mid-t:#252930; --mid-l:#191c21; --mid-r:#1f2228; --mid-s:#4c525c;
+  --hi-t:#3a3f48; --hi-l:#252930; --hi-r:#2f343c; --hi-s:#8e96a2;
+  --lit-t:#f5f6f8; --lit-l:#b5bac2; --lit-r:#d8dbe0; --lit-s:#ffffff;
+  --faint:#2b2f36; --halo:rgba(0,0,0,.7); color-scheme:dark } }
+:root[data-theme="dark"] {
+  --bg:#0b0c0e; --card:#111316; --ink:#e6e8eb; --ink2:#868c95; --rule:#262a30;
+  --lo-t:#1b1e23; --lo-l:#111316; --lo-r:#16191d; --lo-s:#343941;
+  --mid-t:#252930; --mid-l:#191c21; --mid-r:#1f2228; --mid-s:#4c525c;
+  --hi-t:#3a3f48; --hi-l:#252930; --hi-r:#2f343c; --hi-s:#8e96a2;
+  --lit-t:#f5f6f8; --lit-l:#b5bac2; --lit-r:#d8dbe0; --lit-s:#ffffff;
+  --faint:#2b2f36; --halo:rgba(0,0,0,.7); color-scheme:dark }
+
+body { background:var(--bg); color:var(--ink); font-family:var(--f-display);
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:32px 48px; }
+main { max-width:960px; margin:0 auto; display:grid; gap:18px; }
+.card { background:var(--card); border:1px solid var(--rule); border-radius:6px; position:relative;
+  display:grid; grid-template-rows:auto 1fr auto; overflow:hidden; }
+.card header, .card footer { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:12px 16px; font-family:var(--f-mono); font-size:12px; color:var(--ink2); flex-wrap:wrap; }
+.card header b { font-family:var(--f-display); font-weight:600; font-size:14px; color:var(--ink); letter-spacing:.01em; }
+.card header span { letter-spacing:.08em; text-transform:uppercase; font-size:11px; }
+#fig { width:100%; height:auto; display:block; touch-action:manipulation; cursor:pointer; outline:none; }
+#fig:focus-visible { box-shadow:inset 0 0 0 2px var(--hi-s); }
+.readout { text-align:right; font-variant-numeric:tabular-nums; color:var(--ink); min-width:0; }
+.readout div + div { color:var(--ink2); }
+.hint { min-width:0; }
+@media (max-width:600px) { .readout { text-align:left; } }
+.legend { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px 22px;
+  font-size:13px; color:var(--ink2); }
+.legend div { display:flex; gap:10px; align-items:center; }
+.legend svg { flex:none; }
+.caption { font-size:15px; line-height:1.6; max-width:68ch; color:var(--ink); }
+.caption p { margin:0 0 .8em; }
+.caption code { font-family:var(--f-mono); font-size:13px; }
+.caption .small { color:var(--ink2); font-size:13px; }
+
+/* drawing */
+#fig path, #fig ellipse { stroke-width:.7; stroke-linejoin:round; }
+.lo { stroke:var(--lo-s) } .lo.t{fill:var(--lo-t)} .lo.l{fill:var(--lo-l)} .lo.r{fill:var(--lo-r)}
+.mid { stroke:var(--mid-s) } .mid.t{fill:var(--mid-t)} .mid.l{fill:var(--mid-l)} .mid.r{fill:var(--mid-r)}
+.hi { stroke:var(--hi-s) } .hi.t{fill:var(--hi-t)} .hi.l{fill:var(--hi-l)} .hi.r{fill:var(--hi-r)}
+.lit { stroke:var(--lit-s) } .lit.t{fill:var(--lit-t)} .lit.l{fill:var(--lit-l)} .lit.r{fill:var(--lit-r)}
+#fig .ln { fill:none; stroke-linecap:round; stroke-width:.6; }
+.ln.faint{stroke:var(--faint)} .ln.lo{stroke:var(--lo-s)} .ln.mid{stroke:var(--mid-s)} .ln.hi{stroke:var(--hi-s)} .ln.lit{stroke:var(--lit-s); stroke-width:1.1 !important}
+.dt { stroke:none } .dt.lo{fill:var(--lo-s)} .dt.mid{fill:var(--mid-s)} .dt.hi{fill:var(--hi-s)} .dt.lit{fill:var(--lit-s)}
+.dt.off{fill:var(--lo-l)}
+.ring { fill:none; stroke-width:.5 !important; }
+.ring.lo{stroke:var(--lo-s)} .ring.mid{stroke:var(--mid-s)} .ring.hi{stroke:var(--hi-s)}
+.halo { fill:var(--halo); }
+.engr { font-family:var(--f-mono); letter-spacing:.12em; fill:var(--mid-s); }
+</style>
+
+<main>
+  <div class="card">
+    <header><span>Fig 1</span><b>Filling one 64-byte cache line</b></header>
+    <svg id="fig" role="img" tabindex="0" aria-label="An isometric loader: a memory module sends eight 8-byte words along a rail into a fill-buffer tray, requested word first; a lift then pushes the full line into one way of an 8-way cache set, and the evicted line drops into a bin behind."></svg>
+    <footer>
+      <div class="hint" id="hint">Hover the ruler to pick a byte · click or Enter to load · ←/→ step a word</div>
+      <div class="readout" aria-live="polite"><div id="ro1">&nbsp;</div><div id="ro2">&nbsp;</div></div>
+    </footer>
+  </div>
+
+  <div class="legend">
+    <div><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 5 9 2 16 5 16 10 9 13 2 10Z" style="fill:var(--lit-t);stroke:var(--lit-s)"/></svg>The requested word, sent first</div>
+    <div><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 5 9 2 16 5 16 10 9 13 2 10Z" style="fill:var(--hi-t);stroke:var(--hi-s)"/></svg>The other seven words of the line</div>
+    <div><svg width="18" height="14" viewBox="0 0 18 14"><circle cx="9" cy="7" r="3" style="fill:var(--lit-s)"/><circle cx="9" cy="7" r="5.5" style="fill:none;stroke:var(--hi-s)"/></svg>Fill-buffer valid bits, one per word</div>
+    <div><svg width="18" height="14" viewBox="0 0 18 14"><circle cx="9" cy="7" r="6" style="fill:none;stroke:var(--hi-s)"/><path d="M9 7 13 3.5" style="stroke:var(--lit-s);stroke-width:1.4"/></svg>Dial: ns since the load issued; subdial: beats</div>
+  </div>
+
+  <div class="caption">
+    <p>A load misses in L1, L2 and L3, so the core allocates a line fill buffer and sends the request out to DRAM. The memory controller opens the row (tRCD) and reads the column (CL). The line then crosses the 64-bit channel as a burst of eight 8-byte beats. DDR4 orders the burst from the requested column: first the requested word, then the rest of its 32-byte half with wrap-around, then the other half. For byte 40 (word 5) the order is <code>5 6 7 4 1 2 3 0</code>. The waiting load completes as soon as its own word lands, about 81 ns after issue. The rest of the line follows 2.5 ns later.</p>
+    <p>When all eight valid bits are set, the fill buffer writes the whole line into the set at once. Every load in this figure maps to set 44 of a 32 KiB, 8-way L1D (address bits 6–11), so each new line replaces the least recently used way. The evicted line is clean, so it is dropped rather than written back.</p>
+    <p class="small">Times are typical for DDR4-3200 CL22 (tCK 0.625 ns, tRCD and CL 13.75 ns, 0.3125 ns per beat) behind a three-level cache; real latency varies with the core, the fabric and queueing. The figure slows the 81 ns of latency about 33 million times and the 2.5 ns burst about 1.6 billion times, so each beat can be followed.</p>
+  </div>
+</main>
+
+<script>
+(() => {
+"use strict";
+const qs = new URLSearchParams(location.search);
+if (qs.get("theme")) document.documentElement.dataset.theme = qs.get("theme");
+
+/* ---------- camera ---------- */
+const D = Math.PI / 180, AZ = 30 * D, EL = 30 * D;
+const ca = Math.cos(AZ), sa = Math.sin(AZ), se = Math.sin(EL), ce = Math.cos(EL);
+const K = 1.7;
+const P = (x, y, z) => [(x * ca - y * sa) * K, -((x * sa + y * ca) * se + z * ce) * K];
+const f = n => n.toFixed(2);
+const pathOf = (pts, close = true) => "M" + pts.map(p => { const q = P(...p); return f(q[0]) + " " + f(q[1]); }).join("L") + (close ? "Z" : "");
+const pathXY = (qs, close = true) => "M" + qs.map(q => f(q[0]) + " " + f(q[1])).join("L") + (close ? "Z" : "");
+const poly = (pts, cls) => `<path class="${cls}" d="${pathOf(pts)}"/>`;
+const ln = (pts, cls = "faint", extra = "") => `<path class="ln ${cls}" d="${pathOf(pts, false)}"${extra}/>`;
+const dot = (p, r, cls = "hi") => { const q = P(...p); return `<circle class="dt ${cls}" cx="${f(q[0])}" cy="${f(q[1])}" r="${r * K}"/>`; };
+const ringD = (p, r, cls = "lo") => { const q = P(...p); return `<circle class="ring ${cls}" cx="${f(q[0])}" cy="${f(q[1])}" r="${r * K}"/>`; };
+const screw = (p, tone = "lo") => dot(p, .5, tone) + ringD(p, 1.05, tone);
+function hull(pts) {
+  pts = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const p of pts) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of pts.reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+
+/* ---------- solids ---------- */
+function box(b, tone, o = {}) {
+  const [x0, x1, y0, y1, z0, z1] = b;
+  let s = poly([[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], tone + " l")
+        + poly([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], tone + " r")
+        + poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], tone + " t");
+  const bv = o.bevel || 0;
+  if (bv) s += ln([[x0 + bv, y0 + bv, z1], [x1 - bv, y0 + bv, z1], [x1 - bv, y1 - bv, z1], [x0 + bv, y1 - bv, z1], [x0 + bv, y0 + bv, z1]], "faint");
+  return s;
+}
+// vertical cylinder; knurl = number of ribs
+function cyl(cx, cy, z0, z1, r, tone, o = {}) {
+  const N = 36, pts = [];
+  for (let i = 0; i < N; i++) { const t = i / N * 2 * Math.PI; pts.push(P(cx + r * Math.cos(t), cy + r * Math.sin(t), z0), P(cx + r * Math.cos(t), cy + r * Math.sin(t), z1)); }
+  let s = `<path class="${tone} r" d="${pathXY(hull(pts))}"/>`;
+  // shade the -x half of the side
+  const sh = [];
+  for (let i = 0; i <= 12; i++) { const t = (150 + i * 10) * D; sh.push([cx + r * Math.cos(t), cy + r * Math.sin(t), z1]); }
+  for (let i = 12; i >= 0; i--) { const t = (150 + i * 10) * D; sh.push([cx + r * Math.cos(t), cy + r * Math.sin(t), z0]); }
+  if (z1 - z0 > .9) s += `<path class="${tone} l" style="stroke:none" d="${pathOf(sh)}"/>`;
+  if (o.knurl) {
+    for (let j = 0; j < o.knurl; j++) {
+      const t = (o.phase || 0) + j / o.knurl * 2 * Math.PI;
+      const vis = -(Math.cos(t) * sa + Math.sin(t) * ca);
+      if (vis < .12) continue;
+      s += ln([[cx + r * Math.cos(t), cy + r * Math.sin(t), z0 + .5], [cx + r * Math.cos(t), cy + r * Math.sin(t), z1 - .5]], "lo", ` style="opacity:${Math.min(1, (vis - .12) * 2.2).toFixed(2)}"`);
+    }
+  }
+  const top = []; for (let i = 0; i < N; i++) { const t = i / N * 2 * Math.PI; top.push([cx + r * Math.cos(t), cy + r * Math.sin(t), z1]); }
+  s += poly(top, tone + " t");
+  return s;
+}
+// cylinder along y (front face at y0 faces the viewer)
+function cylY(cx, cz, y0, y1, r, tone) {
+  const N = 48, pts = [], fr = [];
+  for (let i = 0; i < N; i++) { const t = i / N * 2 * Math.PI; const x = cx + r * Math.cos(t), z = cz + r * Math.sin(t); pts.push(P(x, y0, z), P(x, y1, z)); fr.push([x, y0, z]); }
+  return `<path class="${tone} t" d="${pathXY(hull(pts))}"/>` + poly(fr, tone + " r");
+}
+const circY = (cx, y, cz, r, a0 = 0, a1 = 360, n = 48) => { const out = []; for (let i = 0; i <= n; i++) { const t = (a0 + (a1 - a0) * i / n) * D; out.push([cx + r * Math.cos(t), y, cz + r * Math.sin(t)]); } return out; };
+
+/* ---------- items + painter ---------- */
+const svg = document.getElementById("fig");
+const NS = "http://www.w3.org/2000/svg";
+const items = [];
+function item(b, html, o = {}) {
+  const g = document.createElementNS(NS, "g");
+  g.innerHTML = html;
+  const it = { b0: b.slice(), b: b.slice(), g, idx: items.length, under: null, off: [0, 0, 0], op: 1, hidden: false, ...o };
+  items.push(it);
+  return it;
+}
+function move(it, dx, dy, dz) {
+  if (it.off[0] === dx && it.off[1] === dy && it.off[2] === dz) return;
+  it.off = [dx, dy, dz];
+  const b = it.b0; it.b = [b[0] + dx, b[1] + dx, b[2] + dy, b[3] + dy, b[4] + dz, b[5] + dz];
+  const q = P(dx, dy, dz);
+  it.g.setAttribute("transform", `translate(${f(q[0])} ${f(q[1])})`);
+}
+function setBox(it, b) { it.b0 = b.slice(); it.b = b.slice(); it.off = [0, 0, 0]; it.g.removeAttribute("transform"); }
+function opacity(it, v) { v = Math.max(0, Math.min(1, v)); if (it.op === v) return; it.op = v; it.g.style.opacity = v < 1 ? v.toFixed(3) : ""; it.hidden = v <= 0; it.g.style.display = v <= 0 ? "none" : ""; }
+function sb(b) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const x of [b[0], b[1]]) for (const y of [b[2], b[3]]) for (const z of [b[4], b[5]]) { const q = P(x, y, z); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+  return [x0, y0, x1, y1];
+}
+const E = .01;
+const behind = (A, B) => A[0] >= B[1] - E || A[2] >= B[3] - E || A[5] <= B[4] + E;
+let lastOrder = "";
+function paint() {
+  const live = items.filter(it => !it.hidden), n = live.length;
+  const bb = live.map(it => sb(it.b)), indeg = new Array(n).fill(0), out = live.map(() => []);
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const a = bb[i], c = bb[j];
+    if (a[2] <= c[0] || c[2] <= a[0] || a[3] <= c[1] || c[3] <= a[1]) continue;
+    const A = live[i], B = live[j];
+    let ab, ba;
+    if (A.under && A.under.has(B)) ab = true; else if (B.under && B.under.has(A)) ba = true;
+    else { ab = behind(A.b, B.b); ba = behind(B.b, A.b); if (ab && ba) continue; }
+    if (ab) { out[i].push(j); indeg[j]++; } else if (ba) { out[j].push(i); indeg[i]++; }
+  }
+  const order = [], done = new Array(n).fill(false);
+  for (let step = 0; step < n; step++) {
+    let pick = -1;
+    for (let i = 0; i < n; i++) if (!done[i] && indeg[i] === 0) { pick = i; break; }
+    if (pick < 0) { for (let i = 0; i < n; i++) if (!done[i]) { pick = i; break; } }
+    done[pick] = true; order.push(pick);
+    for (const j of out[pick]) indeg[j]--;
+  }
+  const key = order.map(i => live[i].idx).join(",");
+  if (key === lastOrder) return;
+  lastOrder = key;
+  for (const i of order) layer.appendChild(live[i].g);
+}
+
+/* ---------- the truth: timing and burst order ---------- */
+const SET = 44;
+const T = { l1: 1.0, l2: 3.5, l3: 12.0, mc: 53.5, rcd: 13.75, cl: 13.75, beat: 0.3125 };
+const T_ACT = T.mc, T_RD = T.mc + T.rcd, T_FIRST = T_RD + T.cl, T_LAST = T_FIRST + 8 * T.beat, T_VALID = T_LAST + 0.5;
+const burstOrder = c => { const h = c & 4, l = c & 3, a = []; for (let i = 0; i < 4; i++) a.push(h | ((l + i) & 3)); for (let i = 0; i < 4; i++) a.push((h ^ 4) | ((l + i) & 3)); return a; };
+
+/* ---------- world layout ---------- */
+const TX0 = 246;                    // x of word 0 in tray, ruler and set
+const slotX = w => TX0 + 1 + 12 * w; // chunk x0
+const CW = 10, CD = 10, CH = 7;
+const shelfZ = k => 6 + 13 * k;      // top of shelf floor k
+const H0 = 4;                        // lift floor z at rest
+const CTRL = [114, 140, 54, 110, 0, 18];
+
+const layer = document.createElementNS(NS, "g");
+
+// halo + base
+const baseB = [0, 430, 0, 165, -8, 0];
+let halo = `<path class="halo" filter="url(#blur)" d="${pathOf([[-6, -8, -13], [438, -8, -13], [438, 172, -13], [-6, 172, -13]])}"/>`;
+const feet = [[16, 16], [414, 16], [414, 149], [16, 149]];
+for (const [x, y] of feet) item([x - 7, x + 7, y - 7, y + 7, -13, -8], cyl(x, y, -13, -8, 7, "lo"));
+{
+  let s = box(baseB, "lo");
+  s += ln([[5, 5, 0], [425, 5, 0], [425, 160, 0], [5, 160, 0], [5, 5, 0]], "faint");
+  s += ln([[0, 0, -2.2], [430, 0, -2.2]], "faint") + ln([[0, 0, -2.2], [0, 165, -2.2]], "faint");
+  for (const [x, y] of [[10, 10], [420, 10], [420, 155], [10, 155]]) s += screw([x, y, 0]);
+  // label plate with one engraved label
+  s += poly([[18, 12, 0], [94, 12, 0], [94, 30, 0], [18, 30, 0]], "mid t");
+  for (const [x, y] of [[21, 15], [91, 15], [91, 27], [21, 27]]) s += dot([x, y, 0], .35, "lo");
+  {
+    const a = P(25, 22.6, 0);
+    s += `<text class="engr" transform="matrix(${f(ca * K)} ${f(-sa * se * K)} ${f(sa * K)} ${f(ca * se * K)} ${f(a[0])} ${f(a[1])})" style="font-size:4.6px">L1D · SET 44 · 8-WAY</text>`;
+  }
+  s += ln([[26, 19, 0], [72, 19, 0]], "lo") + ln([[26, 16.5, 0], [58, 16.5, 0]], "faint");
+  item(baseB, s);
+}
+
+// DIMM: socket, latches, PCB, chips
+item([14, 106, 98, 110, 0, 7], box([14, 106, 98, 110, 0, 7], "lo", { bevel: .8 }) + ln([[18, 103, 7], [102, 103, 7]], "faint"));
+for (const x of [9, 106]) item([x, x + 5, 99, 109, 0, 13], box([x, x + 5, 99, 109, 0, 13], "mid") + ln([[x, 99, 10], [x + 5, 99, 10]], "faint"));
+const PCB = [15, 105, 103, 105, 7, 46];
+{
+  let s = box(PCB, "mid");
+  for (let x = 17; x <= 103.5; x += 1.6) if (Math.abs(x - 61) > 1.2) s += ln([[x, 103, 7], [x, 103, 10.4]], "lo");
+  s += ln([[15, 103, 10.8], [105, 103, 10.8]], "faint");
+  s += poly([[34, 103, 35], [86, 103, 35], [86, 103, 43], [34, 103, 43]], "hi r");
+  s += ln([[37, 103, 40.5], [70, 103, 40.5]], "lo") + ln([[37, 103, 37.5], [60, 103, 37.5]], "faint");
+  for (let i = 0; i < 8; i++) { const cx = 23 + 10.6 * i; s += dot([cx, 103, 12.4], .45, "lo") + dot([cx + 4, 103, 12.4], .45, "lo"); }
+  for (const [x, z] of [[18, 43], [102, 43]]) s += dot([x, 103, z], .9, "lo") + ringD([x, 103, z], 1.6, "lo");
+  item(PCB, s);
+}
+const chips = [];
+for (let i = 0; i < 8; i++) {
+  const x0 = 19.5 + 10.6 * i, b = [x0, x0 + 8.4, 101.6, 103, 15, 29];
+  let s = box(b, "lo");
+  for (let p = 0; p < 5; p++) { const x = x0 + 1.0 + p * 1.6; s += ln([[x, 101.6, 15], [x, 101.6, 14.0]], "lo") + ln([[x, 101.6, 29], [x, 101.6, 30]], "lo"); }
+  const it = item(b, s + `<g class="pin1">${dot([x0 + 1.6, 101.6, 27.2], .55, "off")}</g>`);
+  it.pin = it.g.querySelector(".pin1 circle");
+  chips.push(it);
+}
+
+// memory controller with fins, beat lamps and the clock flywheel
+{
+  let s = box(CTRL, "mid", { bevel: 1 });
+  s += ln([[114, 54, 14], [140, 54, 14]], "faint") + ln([[114, 54, 4], [140, 54, 4]], "faint");
+  for (const [x, y] of [[117, 107], [137, 107], [137, 85], [117, 85]]) s += screw([x, y, 18]);
+  item(CTRL, s);
+}
+const lamps = [];
+{
+  let s = "";
+  for (let i = 0; i < 8; i++) { const x = 116.5 + 3 * i; s += ringD([x, 54, 9], 1.15, "hi") + `<circle class="dt off" data-l="${i}" cx="${f(P(x, 54, 9)[0])}" cy="${f(P(x, 54, 9)[1])}" r="${.65 * K}"/>`; }
+  const it = item([114, 140, 53.9, 54, 6, 12], s);
+  it.g.querySelectorAll("[data-l]").forEach(c => lamps.push(c));
+  it.under = null;
+}
+for (let j = 0; j < 7; j++) { const x = 116.4 + 3.2 * j, b = [x, x + 1.4, 58, 80, 18, 24]; item(b, box(b, "mid")); }
+const fly = item([118.5, 135.5, 85.5, 102.5, 18, 22], "");
+function drawFly(phi) {
+  let s = cyl(127, 94, 18, 22, 8.5, "hi", { knurl: 0 });
+  s += ringD([127, 94, 22], 6.5, "lo") + dot([127, 94, 22], .8, "hi") + ringD([127, 94, 22], 1.6, "lo");
+  for (const a of [phi, phi + Math.PI]) s += ln([[127 + 2.4 * Math.cos(a), 94 + 2.4 * Math.sin(a), 22], [127 + 6.5 * Math.cos(a), 94 + 6.5 * Math.sin(a), 22]], "lit");
+  fly.g.innerHTML = s;
+}
+
+// rails
+const RX1 = TX0 + 104;
+{
+  const b = [140, RX1, 66, 80, 0, 4];
+  let s = box(b, "mid", { bevel: 0 });
+  s += ln([[140, 67.6, 4], [RX1, 67.6, 4]], "faint") + ln([[140, 78.4, 4], [RX1, 78.4, 4]], "faint");
+  for (let x = 156; x < RX1; x += 34) s += screw([x, 73, 4], "lo");
+  item(b, s);
+  const st = [RX1, RX1 + 4, 64, 80, 0, 11];
+  item(st, box(st, "hi") + screw([RX1 + 2, 69, 11], "mid") + screw([RX1 + 2, 77, 11], "mid"));
+  const cb = [140, RX1, 56, 62, 0, 2.5];
+  item(cb, box(cb, "lo") + ln([[140, 59, 2.5], [RX1, 59, 2.5]], "faint"));
+}
+
+// ruler with one tick per byte, slider track, slider, knob
+{
+  const b = [TX0 - 2, TX0 + 98, 42, 52, 0, 1.6];
+  let s = box(b, "mid");
+  for (let i = 0; i <= 64; i++) {
+    const x = TX0 + 1.5 * i, L = i % 8 === 0 ? 5 : i % 4 === 0 ? 3.4 : 2;
+    s += ln([[x, 52, 1.6], [x, 52 - L, 1.6]], i === 0 ? "lit" : i % 8 === 0 ? "hi" : "mid");
+  }
+  for (let w = 0; w < 8; w++) for (let p = 0; p <= w; p++) s += dot([TX0 + 12 * w + 6 - (w * 0.9) / 2 + p * 0.9, 44.6, 1.6], .28, "mid");
+  item(b, s);
+  const tb = [TX0 - 2, TX0 + 98, 33, 41, 0, 1.2];
+  item(tb, box(tb, "lo") + ln([[TX0 - 2, 37, 1.2], [TX0 + 98, 37, 1.2]], "faint") + screw([TX0 + 1, 37, 1.2]) + screw([TX0 + 95, 37, 1.2]));
+}
+const slider = item([-2.6, 2.6, 32.5, 41.8, 1.2, 4.6], box([-2.6, 2.6, 32.5, 41.8, 1.2, 4.6], "hi", { bevel: .5 }) + ln([[0, 41.8, 4.6], [0, 36.5, 4.6]], "lit") + ln([[-2.6, 32.5, 3.2], [2.6, 32.5, 3.2]], "faint"));
+item([TX0 - 21.5, TX0 - 6.5, 30.5, 45.5, 0, 2], cyl(TX0 - 14, 38, 0, 2, 7.5, "mid"));
+const knob = item([TX0 - 20, TX0 - 8, 32, 44, 2, 11], "");
+const drawKnob = ph => { knob.g.innerHTML = cyl(TX0 - 14, 38, 2, 11, 6, "hi", { knurl: 28, phase: ph }) + ringD([TX0 - 14, 38, 11], 3.4, "lo") + dot([TX0 - 14, 38, 11], .55, "mid") + ln([[TX0 - 14 + 3.4 * Math.cos(ph), 38 + 3.4 * Math.sin(ph), 11], [TX0 - 14 + 5.4 * Math.cos(ph), 38 + 5.4 * Math.sin(ph), 11]], "lit"); };
+
+// issue station: a push button with a pending lamp
+{
+  const b = [26, 68, 48, 78, 0, 10];
+  let s = box(b, "mid", { bevel: 1 });
+  for (const [x, y] of [[29, 51], [65, 51], [65, 75], [29, 75]]) s += screw([x, y, 10]);
+  s += ln([[26, 48, 6.5], [68, 48, 6.5]], "faint");
+  s += ringD([60, 48, 3.4], 1.4, "hi");
+  const it = item(b, s + `<g class="pend">${dot([60, 48, 3.4], .8, "off")}</g>`);
+  it.pend = it.g.querySelector(".pend circle");
+  var station = it;
+  item([37, 57, 53, 73, 10, 12], cyl(47, 63, 10, 12, 10, "lo"));
+}
+const button = item([39, 55, 55, 71, 12, 16.5], cyl(47, 63, 12, 16.5, 8, "hi") + ringD([47, 63, 16.5], 5, "lo"));
+
+// cabinet: one cache set with 8 ways
+const WALLL = [TX0 - 8, TX0 - 4, 110, 123, 0, 112], WALLR = [TX0 + 100, TX0 + 104, 110, 123, 0, 112];
+item(WALLR, box(WALLR, "mid"));
+const tagLeds = [];
+{
+  let s = box(WALLL, "mid");
+  for (let k = 0; k < 8; k++) {
+    const z = shelfZ(k);
+    s += poly([[TX0 - 8, 113.5, z + 1], [TX0 - 8, 121.5, z + 1], [TX0 - 8, 121.5, z + 7.6], [TX0 - 8, 113.5, z + 7.6]], "hi l");
+    s += ln([[TX0 - 8, 115, z + 5.6], [TX0 - 8, 120, z + 5.6]], "lo") + ln([[TX0 - 8, 115, z + 3.4], [TX0 - 8, 118.2, z + 3.4]], "faint");
+    s += ringD([TX0 - 8, 111.6, z + 4.3], 1.05, "hi") + `<circle class="dt hi" data-k="${k}" cx="${f(P(TX0 - 8, 111.6, z + 4.3)[0])}" cy="${f(P(TX0 - 8, 111.6, z + 4.3)[1])}" r="${.6 * K}"/>`;
+    if (k) s += ln([[TX0 - 8, 110, z - 3], [TX0 - 8, 123, z - 3]], "faint");
+  }
+  const it = item(WALLL, s);
+  it.g.querySelectorAll("[data-k]").forEach(c => tagLeds[+c.dataset.k] = c);
+}
+for (let k = 0; k < 8; k++) {
+  const z = shelfZ(k), b = [TX0 - 4, TX0 + 100, 112, 123, z - 2, z];
+  item(b, box(b, "lo") + ln([[TX0 - 4, 112, z - 1], [TX0 + 100, 112, z - 1]], "faint"));
+}
+{
+  const b = [TX0 - 8, TX0 + 104, 110, 123, 112, 116];
+  let s = box(b, "mid", { bevel: 1 });
+  for (const [x, y] of [[TX0 - 5, 113], [TX0 + 101, 113], [TX0 + 101, 120], [TX0 - 5, 120]]) s += screw([x, y, 116]);
+  for (let v = 0; v < 9; v++) { const x = TX0 + 12 + v * 9; s += poly([[x, 114.5, 116], [x + 5, 114.5, 116], [x + 5, 118.5, 116], [x, 118.5, 116]], "lo t"); }
+  item(b, s);
+}
+// bin for evicted lines
+{
+  const fl = [TX0 - 4, TX0 + 100, 126, 150, 0, 1.5];
+  item(fl, box(fl, "lo") + ln([[TX0 + 4, 140, 1.5], [TX0 + 92, 140, 1.5]], "faint"));
+  for (const b of [[TX0 - 4, TX0 + 100, 148, 150, 1.5, 5], [TX0 - 4, TX0 - 2, 128, 148, 1.5, 5], [TX0 + 98, TX0 + 100, 128, 148, 1.5, 5], [TX0 - 4, TX0 + 100, 126, 128, 1.5, 5]]) item(b, box(b, "mid"));
+}
+
+// lift: guide rods, bushings, tray, actuator, pusher, top beam, motor
+const RODS = [TX0 - 24, TX0 + 120], RODY = 95, ROD_TOP = 118;
+for (const x of RODS) item([x - 3.2, x + 3.2, RODY - 3.2, RODY + 3.2, 0, 3], cyl(x, RODY, 0, 3, 3.2, "mid"));
+const rodLo = RODS.map(() => item([0, 0, 0, 0, 0, 0], "")), rodHi = RODS.map(() => item([0, 0, 0, 0, 0, 0], ""));
+const bush = RODS.map(x => item([x - 4, x + 4, RODY - 4, RODY + 4, -1, 9], cyl(x, RODY, -1, 9, 4, "hi") + ringD([x, RODY, 9], 1.6, "lo") + ln([[x - 4 * sa, RODY - 4 * ca, 1.4], [x - 4 * sa, RODY - 4 * ca, 6.6]], "faint")));
+const trayB = [TX0 - 20, TX0 + 116, 84, 106, 0, 2];
+let traySvg = box(trayB, "mid");
+for (let w = 0; w < 8; w++) traySvg += ln([[slotX(w), 90, 2], [slotX(w) + CW, 90, 2], [slotX(w) + CW, 100, 2], [slotX(w), 100, 2], [slotX(w), 90, 2]], "faint");
+traySvg += screw([TX0 - 15, 95, 2]) + screw([TX0 + 111, 95, 2]);
+const tray = item(trayB, traySvg);
+const actB = [TX0 - 20, TX0 + 116, 80, 84, 0, 9];
+const lfbLeds = [];
+{
+  let s = box(actB, "hi", { bevel: 0 });
+  s += ln([[TX0 - 20, 80, 2], [TX0 + 116, 80, 2]], "faint");
+  for (let w = 0; w < 8; w++) { const x = slotX(w) + 5; s += ringD([x, 80, 5.5], 1.25, "mid") + `<circle class="dt off" data-w="${w}" cx="${f(P(x, 80, 5.5)[0])}" cy="${f(P(x, 80, 5.5)[1])}" r="${.7 * K}"/>`; }
+  s += screw([TX0 - 14, 80, 5.5], "mid") + screw([TX0 + 110, 80, 5.5], "mid");
+  var act = item(actB, s);
+  act.g.querySelectorAll("[data-w]").forEach(c => lfbLeds[+c.dataset.w] = c);
+}
+const pusher = item([TX0 - 2, TX0 + 98, 86, 90, 2, 8], box([TX0 - 2, TX0 + 98, 86, 90, 2, 8], "hi", { bevel: .5 }) + ln([[TX0 - 2, 86, 5], [TX0 + 98, 86, 5]], "faint"));
+const pushRods = [TX0 + 18, TX0 + 76].map(() => item([0, 0, 0, 0, 0, 0], ""));
+{
+  const b = [TX0 - 29, TX0 + 125, 90, 100, ROD_TOP, ROD_TOP + 5];
+  let s = box(b, "mid", { bevel: 1 });
+  for (const x of RODS) s += screw([x, 95, ROD_TOP + 5], "lo");
+  item(b, s);
+  const m = [TX0 + 38, TX0 + 58, 91, 99, ROD_TOP + 5, ROD_TOP + 15];
+  let ms = box(m, "hi", { bevel: .6 });
+  for (let i = 0; i < 5; i++) { const z = ROD_TOP + 7 + i * 1.6; ms += ln([[TX0 + 38, 91, z], [TX0 + 58, 91, z]], "faint"); }
+  item(m, ms);
+  item([TX0 + 44, TX0 + 52, 91, 99, ROD_TOP + 15, ROD_TOP + 17], cyl(TX0 + 48, 95, ROD_TOP + 15, ROD_TOP + 17, 3.6, "mid") + dot([TX0 + 48, 95, ROD_TOP + 17], .6, "lo"));
+}
+
+// gauge: ns since issue, with a beat subdial
+const GX = 392, GY = 40, GZ = 46, GR = 21;
+item([GX - 7, GX + 7, 45, 59, 0, 3], cyl(GX, 52, 0, 3, 7, "mid") + screw([GX, 52, 3]));
+item([GX - 3, GX + 3, 49, 55, 3, 22], cyl(GX, 52, 3, 22, 3, "hi"));
+item([GX - 4, GX + 4, 47, 54, 22, 34], box([GX - 4, GX + 4, 47, 54, 22, 34], "mid") + screw([GX, 47.5 + 0, 28]).replace(/^/, ""));
+const ang = v => (225 - 270 * Math.min(100, Math.max(0, v)) / 100);
+const subA = b => 90 - 360 * b / 8;
+{
+  let s = cylY(GX, GZ, GY, GY + 7, GR + 1.5, "mid");
+  s += poly(circY(GX, GY, GZ, GR - .8), "hi r");
+  s += ln(circY(GX, GY, GZ, GR - 3, -45, 225), "mid");
+  for (let v = 0; v <= 100; v += 2) {
+    const a = ang(v) * D, L = v % 10 === 0 ? 3 : 1.5;
+    s += ln([[GX + (GR - 3) * Math.cos(a), GY, GZ + (GR - 3) * Math.sin(a)], [GX + (GR - 3 - L) * Math.cos(a), GY, GZ + (GR - 3 - L) * Math.sin(a)]], v === 0 ? "hi" : v % 10 === 0 ? "mid" : "lo");
+  }
+  { const a = ang(T_FIRST) * D; s += ln([[GX + (GR - 2.2) * Math.cos(a), GY, GZ + (GR - 2.2) * Math.sin(a)], [GX + (GR - .9) * Math.cos(a), GY, GZ + (GR - .9) * Math.sin(a)]], "lit"); }
+  const sx = GX, sz = GZ - 8.5;
+  s += ln(circY(sx, GY, sz, 4.6), "lo");
+  for (let b = 0; b < 8; b++) { const a = subA(b) * D; s += ln([[sx + 4.6 * Math.cos(a), GY, sz + 4.6 * Math.sin(a)], [sx + 3.6 * Math.cos(a), GY, sz + 3.6 * Math.sin(a)]], b === 0 ? "hi" : "lo"); }
+  for (const a of [45, 135, 225, 315]) s += screw([GX + (GR + .2) * Math.cos(a * D), GY, GZ + (GR + .2) * Math.sin(a * D)], "lo");
+  item([GX - GR - 1.5, GX + GR + 1.5, GY, GY + 7, GZ - GR - 1.5, GZ + GR + 1.5], s);
+}
+const needle = item([GX - GR, GX + GR, GY - .2, GY - .1, GZ - GR, GZ + GR], "");
+function drawNeedle(v, beats) {
+  const a = ang(v) * D, y = GY - .1;
+  const sa2 = subA(beats) * D, sx = GX, sz = GZ - 8.5;
+  needle.g.innerHTML =
+    ln([[sx, y, sz], [sx + 3.6 * Math.cos(sa2), y, sz + 3.6 * Math.sin(sa2)]], "hi") + dot([sx, y, sz], .55, "hi") +
+    ln([[GX - 4 * Math.cos(a), y, GZ - 4 * Math.sin(a)], [GX + (GR - 4.5) * Math.cos(a), y, GZ + (GR - 4.5) * Math.sin(a)]], "lit") +
+    dot([GX, y, GZ], 1.5, "hi") + dot([GX, y, GZ], .55, "mid");
+}
+item([GX - 2.6, GX + 2.6, 41, 46, GZ + GR + 1.5, GZ + GR + 5.5], cyl(GX, 43.5, GZ + GR + 1.5, GZ + GR + 5.5, 2.6, "hi", { knurl: 14 }));
+
+// command puck
+const puck = item([-2.4, 2.4, 56.6, 61.4, 2.5, 4.5], cyl(0, 59, 2.5, 4.5, 2.4, "lit"));
+puck.under = new Set([items[items.findIndex(it => it.b0[0] === 114 && it.b0[3] === 110)]]);
+const ctrlItem = [...puck.under][0];
+
+// chunks (words)
+const chunkSvg = tone => {
+  let s = box([0, CW, 0, CD, 0, CH], tone);
+  for (let j = 1; j < 8; j++) s += ln([[j * CW / 8, 0, CH], [j * CW / 8, CD, CH]], tone === "lit" ? "mid" : "faint");
+  return s;
+};
+const chunks = [];
+for (let i = 0; i < 72; i++) { const it = item([0, CW, 0, CD, 0, CH], chunkSvg("mid")); it.tone = "mid"; chunks.push(it); }
+const tone = (it, t) => { if (it.tone !== t) { it.tone = t; it.g.innerHTML = chunkSvg(t); } };
+const shelves = [];
+for (let k = 0; k < 8; k++) shelves.push({ tag: 0, ch: chunks.slice(k * 8, k * 8 + 8) });
+let spare = chunks.slice(64);
+let ages = [3, 6, 1, 7, 0, 5, 2, 4];
+let rng = 0x2f6e2b1; const rnd = () => (rng = (rng * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+const newTag = () => 0x7f3a00000 + Math.floor(rnd() * 0xfffff) * 16 + Math.floor(rnd() * 16);
+shelves.forEach(s => s.tag = newTag());
+
+/* ---------- fit ---------- */
+{
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const it of items) { const q = sb(it.b0[0] === 0 && it.b0[1] === 0 ? [0, 0, 0, 0, 0, 0] : it.b0); if (it.b0[1] - it.b0[0] <= 0 || it === slider || it === puck || chunks.includes(it)) continue; x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[2]); y1 = Math.max(y1, q[3]); }
+  const px = 34, py = 22;
+  svg.setAttribute("viewBox", `${f(x0 - px)} ${f(y0 - py)} ${f(x1 - x0 + 2 * px)} ${f(y1 - y0 + 2 * py + 8)}`);
+}
+svg.innerHTML = `<defs><filter id="blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="${4 * K}"/></filter></defs>` + halo;
+svg.appendChild(layer);
+
+/* ---------- one fill, as a pure function of time ---------- */
+const V = 430, HOP = .42, TB = 2.7, BEAT = .5;
+const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+function plan(byte) {
+  const c = byte >> 3, order = burstOrder(c);
+  let k = 0; for (let i = 1; i < 8; i++) if (ages[i] > ages[k]) k = i;
+  const beats = order.map((w, i) => { const te = TB + BEAT * i, ta = te + (slotX(w) - 128) / V; return { w, i, te, ta, tl: ta + HOP }; });
+  const land = Math.max(...beats.map(b => b.tl));
+  const tw0 = land + .3, tw1 = tw0 + .55 + .06 * k, tP0 = tw1 + .12, tP1 = tP0 + .8, tR1 = tP1 + .4, tEnd = tR1 + .55 + .06 * k;
+  const neu = spare; spare = [];
+  const byW = []; beats.forEach(b => byW[b.w] = b);
+  return { byte, c, order, k, beats, byW, land, tw0, tw1, tP0, tP1, tR1, tEnd, neu, old: shelves[k].ch, tag: newTag(), crit: byW[c].tl };
+}
+function modelT(R, t) {
+  if (!R) return lastValid;
+  if (t < .3) return lerp(0, T.l1, t / .3);
+  if (t < .6) return lerp(T.l1, T.l2, (t - .3) / .3);
+  if (t < .9) return lerp(T.l2, T.l3, (t - .6) / .3);
+  if (t < 1.5) return lerp(T.l3, T.mc, (t - .9) / .6);
+  if (t < 2.1) return lerp(T_ACT, T_RD, (t - 1.5) / .6);
+  if (t < TB) return lerp(T_RD, T_FIRST, (t - 2.1) / .6);
+  if (t < TB + 8 * BEAT) return lerp(T_FIRST, T_LAST, (t - TB) / (8 * BEAT));
+  if (t < R.tw0) return T_LAST;
+  return lerp(T_LAST, T_VALID, ss(R.tw0, R.tP1, t));
+}
+let R = null, t0 = 0, lastValid = 0, needleV = 0, lastByte = 40, selByte = 40, slidePos = 40;
+const fmtA = (tag, byte) => "0x" + (tag * 4096 + SET * 64 + byte).toString(16).padStart(12, "0");
+
+function render(t) {
+  // lift
+  let h = H0, d = 0;
+  if (R) {
+    const hk = shelfZ(R.k) - 2;
+    h = t < R.tw0 ? H0 : t < R.tw1 ? lerp(H0, hk, ss(R.tw0, R.tw1, t)) : t < R.tR1 ? hk : lerp(hk, H0, ss(R.tR1, R.tEnd, t));
+    d = t < R.tP0 ? 0 : t < R.tP1 ? 23 * ss(R.tP0, R.tP1, t) : t < R.tR1 ? 23 * (1 - ss(R.tP1, R.tR1, t)) : 0;
+  }
+  move(tray, 0, 0, h); move(act, 0, 0, h); move(pusher, 0, d, h);
+  bush.forEach(b => move(b, 0, 0, h));
+  RODS.forEach((x, i) => {
+    rodLo[i].g.innerHTML = cyl(x, RODY, 3, h - 1, 1.6, "hi"); setBox(rodLo[i], [x - 1.6, x + 1.6, RODY - 1.6, RODY + 1.6, 3, h - 1]);
+    rodHi[i].g.innerHTML = cyl(x, RODY, h + 9, ROD_TOP, 1.6, "hi"); setBox(rodHi[i], [x - 1.6, x + 1.6, RODY - 1.6, RODY + 1.6, h + 9, ROD_TOP]);
+    if (h - 1 <= 3.05) opacity(rodLo[i], 0); else opacity(rodLo[i], 1);
+  });
+  [TX0 + 18, TX0 + 76].forEach((x, i) => {
+    const b = [x, x + 2, 84, 86 + d, h + 4, h + 6];
+    pushRods[i].g.innerHTML = box(b, "mid"); setBox(pushRods[i], b);
+  });
+
+  // shelves at rest
+  shelves.forEach((s, k) => { if (R && k === R.k) return; s.ch.forEach((it, w) => { move(it, slotX(w), 113, shelfZ(k)); opacity(it, 1); it.under = null; }); });
+  spare.forEach(it => opacity(it, 0));
+
+  let beatsDone = 0, phase = "";
+  const tm = modelT(R, t);
+  if (R) {
+    const zk = shelfZ(R.k);
+    R.beats.forEach(b => { if (t >= b.te) beatsDone = Math.min(8, Math.max(beatsDone, b.i + 1)); });
+    if (t >= TB + 8 * BEAT) beatsDone = 8;
+    // new words
+    R.beats.forEach(b => {
+      const it = R.neu[b.w], x = slotX(b.w);
+      tone(it, b.w === R.c ? "lit" : "hi");
+      it.under = null;
+      if (t < b.te) { opacity(it, 0); return; }
+      opacity(it, 1);
+      if (t < b.ta) { const xx = 128 + V * (t - b.te); move(it, xx, 68, 4); if (xx < 140) it.under = new Set([ctrlItem]); return; }
+      if (t < b.tl) { const s = (t - b.ta) / HOP; move(it, x, 68 + 22 * ss(.18, .72, s), 4 + 11 * ss(0, .25, s) - (15 - (H0 + 2)) * ss(.76, 1, s)); return; }
+      if (t < R.tP0) { move(it, x, 90, h + 2); return; }
+      move(it, x, t < R.tP1 ? 90 + d : 113, t < R.tP1 ? h + 2 : zk);
+    });
+    // old words leave the victim way
+    const g = 900, tf = Math.sqrt(2 * (zk - 1.5) / g);
+    R.old.forEach((it, w) => {
+      const x = slotX(w);
+      it.under = null;
+      if (t < R.tP0) { move(it, x, 113, zk); opacity(it, 1); return; }
+      if (t < R.tP1) { move(it, x, Math.max(113, 100 + 23 * ss(R.tP0, R.tP1, t)), zk); return; }
+      const u = t - R.tP1;
+      if (u < tf + .02) { const y = 123 + 8 * Math.min(1, u / Math.max(.12, tf * .7)); move(it, x, y, Math.max(1.5, zk - .5 * g * u * u)); opacity(it, 1); return; }
+      move(it, x, 131, 1.5); opacity(it, 1 - (u - tf) / .6);
+    });
+    // phase text
+    if (tm < T.l1) phase = "L1D lookup";
+    else if (tm < T.l2) phase = "L1D miss → L2";
+    else if (tm < T.l3) phase = "L2 miss → L3";
+    else if (tm < T_ACT) phase = "L3 miss → memory controller";
+    else if (tm < T_RD) phase = "DRAM activate: open row (tRCD)";
+    else if (tm < T_FIRST) phase = "DRAM read: column access (CL)";
+    else if (t < R.land) phase = `burst beat ${beatsDone}/8 · word ${R.order[Math.max(0, beatsDone - 1)]}` + (t >= R.crit ? " · load done" : "");
+    else if (t < R.tP1) phase = `writing line into way ${R.k}`;
+    else phase = `line valid in way ${R.k}`;
+  }
+  // lamps and LEDs
+  lamps.forEach((c, i) => { const on = R && R.beats[i] && t >= R.beats[i].te && t < R.tP1; c.setAttribute("class", "dt " + (on ? (i === 0 ? "lit" : "hi") : "off")); });
+  const chipOn = R && tm >= T_ACT && t < TB + 8 * BEAT;
+  chips.forEach(c => c.pin.setAttribute("class", "dt " + (chipOn ? "lit" : "off")));
+  lfbLeds.forEach((c, w) => { const on = R && t >= R.byW[w].tl && t < R.tP1; c.setAttribute("class", "dt " + (on ? "lit" : "off")); });
+  let vk = 0; for (let i = 1; i < 8; i++) if (ages[i] > ages[vk]) vk = i;
+  tagLeds.forEach((c, k) => { const off = R ? (k === R.k && t >= R.tP0 && t < R.tP1) : false; c.setAttribute("class", "dt " + (off ? "off" : (!R && k === vk) ? "off" : (R && k === R.k && t >= R.tP1) ? "lit" : "hi")); });
+  station.pend.setAttribute("class", "dt " + (R && t < R.crit ? "lit" : "off"));
+  move(button, 0, 0, R && t < .35 ? -2.5 * Math.sin(Math.min(1, t / .35) * Math.PI) : 0);
+  // puck: request travels from the fill buffer to the controller
+  if (R && t < 1.55) { const x = lerp(TX0 + 6 + 12 * R.c, 143, ss(.25, 1.5, t)); move(puck, x, 0, 0); opacity(puck, Math.min(1, t / .2) * (1 - ss(1.38, 1.55, t))); } else opacity(puck, 0);
+  // flywheel turns with the burst: two beats per clock
+  const beatPos = R ? Math.max(0, Math.min(8, (t - TB) / BEAT)) : 0;
+  drawFly(-Math.PI * beatPos + .4);
+  drawNeedle(needleV, R ? Math.min(8, beatPos) : 0);
+
+  // readout
+  const byte = R ? R.byte : selByte, tag = R ? R.tag : shelves[vk].tag;
+  document.getElementById("ro1").textContent = R
+    ? `load ${fmtA(R.tag, R.byte)} · tag ${R.tag.toString(16)} · set ${SET} · byte ${R.byte} (word ${R.c})`
+    : `next load: byte ${selByte} (word ${selByte >> 3}) · burst ${burstOrder(selByte >> 3).join(" ")}`;
+  document.getElementById("ro2").textContent = R
+    ? `${phase} · ${tm.toFixed(tm < 80 ? 1 : 2)} ns`
+    : (lastValid ? `line valid in way ${lastK} at ${T_VALID.toFixed(1)} ns · next victim: way ${vk} (LRU)` : `set ${SET} holds 8 lines · next victim: way ${vk} (LRU)`);
+  return tm;
+}
+let lastK = 0;
+function commit() {
+  shelves[R.k].ch = R.neu; shelves[R.k].tag = R.tag;
+  spare = R.old;
+  ages = ages.map((a, i) => i === R.k ? 0 : a + 1);
+  lastValid = T_VALID; lastK = R.k;
+  R = null;
+}
+function issue() {
+  if (R) return false;
+  // previous line drops back to the ordinary tone
+  shelves.forEach(s => s.ch.forEach(it => tone(it, "mid")));
+  R = plan(selByte); t0 = now();
+  return true;
+}
+
+/* ---------- live ---------- */
+const now = () => performance.now() / 1000;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+let lastInput = -1e9, visible = true, raf = 0, prev = now(), idleSince = now();
+function tick() {
+  raf = 0;
+  const n = now(), dt = Math.min(.05, n - prev); prev = n;
+  let t = R ? (n - t0) * (window.__slow || 1) : 0;
+  if (R && window.__slow) { R._acc = (R._acc || 0) + dt * window.__slow; t = R._acc; }
+  if (R && t >= R.tEnd) { commit(); idleSince = n; }
+  slidePos += (selByte - slidePos) * (1 - Math.exp(-dt * 10));
+  move(slider, TX0 + 1.5 * slidePos + .75, 0, 0);
+  drawKnob(slidePos / 64 * 2 * Math.PI);
+  const tm = render(t);
+  needleV += ((R ? tm : lastValid) - needleV) * (1 - Math.exp(-dt * (R ? 30 : 4)));
+  drawNeedle(needleV, R ? Math.min(8, Math.max(0, (t - TB) / BEAT)) : (lastValid ? 8 : 0));
+  paint();
+  // idle tour
+  if (!R && n - idleSince > 2.4 && n - lastInput > 7) { selByte = [40, 8, 63, 20, 33, 0, 52, 27][(tour++) % 8]; issue(); }
+  if (visible && !reduce.matches) raf = requestAnimationFrame(tick);
+}
+let tour = 0;
+function kick() { if (!raf && visible && !reduce.matches) { prev = now(); raf = requestAnimationFrame(tick); } }
+function still() {
+  // reduced motion: one frame mid-burst, held
+  selByte = 40; slidePos = 40; R = plan(40);
+  const t = TB + 3.2 * BEAT;
+  move(slider, TX0 + 1.5 * 40 + .75, 0, 0); drawKnob(40 / 64 * 2 * Math.PI);
+  const tm = render(t); needleV = tm; drawNeedle(tm, 3.2); paint();
+}
+function floorAt(ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const u = q.x / K, w = -q.y / (K * se);
+  return [u * ca + w * sa, -u * sa + w * ca];
+}
+svg.addEventListener("pointermove", ev => {
+  const [x, y] = floorAt(ev);
+  if (x > TX0 - 8 && x < TX0 + 104 && y > 18 && y < 112) { selByte = Math.max(0, Math.min(63, Math.floor((x - TX0) / 1.5))); lastInput = now(); kick(); if (reduce.matches) stillSel(); }
+});
+svg.addEventListener("click", () => { lastInput = now(); if (reduce.matches) return stillSel(); issue(); kick(); });
+svg.addEventListener("keydown", ev => {
+  const st = ev.shiftKey ? 1 : 8;
+  if (ev.key === "ArrowRight") selByte = Math.min(63, selByte + st);
+  else if (ev.key === "ArrowLeft") selByte = Math.max(0, selByte - st);
+  else if (ev.key === "Enter" || ev.key === " ") { if (!reduce.matches) issue(); }
+  else return;
+  ev.preventDefault(); lastInput = now(); kick(); if (reduce.matches) stillSel();
+});
+function stillSel() { R = null; spare = shelves.length ? spare : spare; const b = selByte; spare = chunks.filter(c => !shelves.some(s => s.ch.includes(c))); R = plan(b); const t = TB + 3.2 * BEAT; move(slider, TX0 + 1.5 * b + .75, 0, 0); drawKnob(b / 64 * 2 * Math.PI); const tm = render(t); drawNeedle(tm, 3.2); paint(); }
+new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible) kick(); }).observe(svg);
+document.addEventListener("visibilitychange", () => { if (document.hidden) visible = false; else { visible = true; kick(); } });
+reduce.addEventListener?.("change", () => { if (reduce.matches) still(); else kick(); });
+
+window.__fig = { issue: b => { if (b != null) selByte = b; return issue(); }, get R() { return R; }, setT: t => { if (R) { t0 = now() - t; } } };
+if (reduce.matches) still(); else { render(0); paint(); kick(); }
+})();
+</script>
