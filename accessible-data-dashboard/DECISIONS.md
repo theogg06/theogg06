@@ -35,3 +35,44 @@ A short rationale for every non-obvious choice. Newest at the bottom of each pha
 
 **D-014 · Desk research cites only sources that were checked during this session. Figures are quoted only where they appear in the source's abstract.**
 *Why:* The rule against fabrication. Anything not checked against full text is flagged for re-checking before it goes into the case study.
+
+## Phase 1: Design
+
+**D-020 · Figma file:** [Accessible Data Dashboard](https://www.figma.com/design/rKEwC8areZnXnjiouJh22w). It has 9 pages; the spec mirrors them in `design/SPEC.md`.
+*Why:* Figma is where the design is reviewed, and the spec in the repo is what the code is built against. Screenshots are in `design/screenshots/`, because Figma asset URLs are blocked by the container proxy.
+
+**D-021 · Categorical palette: a custom 6-slot set whose order was picked by enumeration, not a stock palette.**
+*Why:* WCAG 1.4.11 needs every series to reach ≥ 3:1 against the surface, which rules out several Okabe–Ito and dataviz-default slots in light mode. Candidate hues were darkened to ≥ 4.6:1, and every ordering of 6 from a pool of 8 was checked with the dataviz skill's validator, in light and dark. 48 orderings passed adjacent CVD ΔE ≥ 8 with all-pairs separation for the first 3 slots, and blue → ochre → magenta → green → violet → orange was chosen. Worst adjacent CVD ΔE is 10.0 / 10.1.
+
+**D-022 · Colour is treated as the weakest identity channel.**
+*Why:* In greyscale all six slots collapse to roughly the same grey, and under protanopia slots 2, 4 and 6 converge. So every series also gets a dash pattern, marker shape, direct label and, for areas and bars, a pattern fill. The Figma file shows the line chart re-rendered under each simulation as evidence.
+
+**D-023 · The euro area reference series is visually heaviest (3px solid, circle marker, slot 1), and each country keeps a fixed slot.**
+*Why:* JTBD J1 is about divergence from the euro area, so the reference must be easy to find. Fixed slots mean that filtering countries never recolours the ones that remain.
+
+**D-024 · Heatmap prints the value in every cell.**
+*Why:* Sequential ramps are hard to read precisely and fail 1.4.1 on their own. Printing the value makes colour supplementary. Text colour is chosen per bin for ≥ 4.5:1 (tokens `chart/seq-n-text`).
+
+**D-025 · Out-of-range values are flagged at the plot edge without rescaling the axis by default.**
+*Why:* Rescaling for one spike would flatten every other series. The value is shown exactly in a marker label, the table and the summary, and the user can rescale if they choose.
+
+**D-026 · Errors never fall back silently to old data.**
+*Why:* JTBD J6 and J7 are about trust. Showing an older snapshot is offered as an explicit choice ("Use snapshot from 14 Oct 2026") and is labelled when used.
+
+**D-027 · Chart region = one tab stop with roving focus inside.**
+*Why:* A chart can hold 165 points, and tabbing through them would be unusable. Arrow, Home and End keys match the WAI-ARIA grid and listbox mental model. Single-key shortcuts (S, T, ?) only work while focus is inside the chart, which satisfies 2.1.4.
+
+**D-028 · Breakpoints use container CSS px, so zoom and small screens share layouts.**
+*Why:* 1280 px at 200% zoom is 640 CSS px, and at 400% it is 320 CSS px. Designing 320 and 640 therefore covers both 1.4.10 reflow and 1.4.4 resize. The data table is the only element allowed to scroll horizontally, inside a labelled, focusable region.
+
+**D-029 · Theme and density are not part of shared URLs.**
+*Why:* They are personal accessibility settings. A link sent by a high-contrast user should not force high contrast on the recipient, and the reverse also holds.
+
+**D-030 · Delete confirmation gives initial focus to the safe action ("Keep view"), and Undo stays until dismissed or for ≥ 10 s.**
+*Why:* This guards against accidental activation by keyboard or switch users, and against timing limits (2.2.1).
+
+**D-031 · Hatching in Figma uses boolean-intersected outlines rather than masks.**
+*Why:* Figma's Plugin API can't set pattern paints, and masked hatch instances leaked outside their shapes when rendered. Intersected geometry renders reliably. In code, the Highcharts pattern-fill module does this natively.
+
+**D-032 · Placeholder font is Inter.**
+*Why:* It has tabular figures, distinguishable glyphs and wide availability. It will be swapped if the Accessible Design System specifies another family.
