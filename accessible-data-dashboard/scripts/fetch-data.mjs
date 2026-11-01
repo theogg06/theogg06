@@ -115,12 +115,19 @@ async function eurostat(code, filters, geos, sinceTimePeriod) {
   return { url, series, sourceUpdated: updated };
 }
 
-async function eurostatWithEaFallback(code, filters, sinceTimePeriod) {
-  try { return await eurostat(code, filters, ['EA20', ...COUNTRIES.map((c) => (c === 'GR' ? 'EL' : c))], sinceTimePeriod); }
-  catch (e) {
-    console.warn(`  EA20 failed for ${code}, retrying with EA: ${e.message.split('\n')[0]}`);
-    return eurostat(code, filters, ['EA', ...COUNTRIES.map((c) => (c === 'GR' ? 'EL' : c))], sinceTimePeriod);
+/** Euro area aggregate code changed with each enlargement (EA20 → EA21 in 2026). Try newest first. */
+async function eurostatWithEaFallback(code, filters, sinceTimePeriod, eaCodes = ['EA21', 'EA20', 'EA']) {
+  const countries = COUNTRIES.map((c) => (c === 'GR' ? 'EL' : c));
+  let last;
+  for (const ea of eaCodes) {
+    try {
+      const r = await eurostat(code, filters, [ea, ...countries], sinceTimePeriod);
+      if (r.series.some((s) => s.id === 'EA' && s.observations.some((o) => o.value != null))) return { ...r, eaCode: ea };
+      last = new Error(`${ea} returned no values`);
+    } catch (e) { last = e; }
+    console.warn(`  ${code}: euro area code ${ea} unusable (${String(last.message).split('\n')[0]}), trying next`);
   }
+  throw last;
 }
 
 const geoFromEcb = (row) => (GEO[row.REF_AREA] ?? [row.REF_AREA])[0];
@@ -129,8 +136,11 @@ const labelFromEcb = (row) => (GEO[row.REF_AREA] ?? [row.REF_AREA, row.REF_AREA]
 // ---------------------------------------------------------------- datasets
 const DATASETS = {
   hicp: async () => {
-    const r = await ecb('ICP', `M.U2+${COUNTRIES.join('+')}.N.000000.4.ANR`, { startPeriod: START_M }, { seriesId: geoFromEcb, label: labelFromEcb });
-    return { source: 'ECB', dataset: 'ICP — HICP, overall index, annual rate of change', frequency: 'M', unit: '%', unitLabel: 'Annual rate of change, %', ...r };
+    // ECB ICP series stop at 2025-12 after the 2026 move to COICOP 2018; Eurostat's
+    // prc_hicp_minr carries the current HICP (verified with scripts/probe-sources.mjs).
+    // 'EA' = euro area, changing composition (EA21 from 2026).
+    const r = await eurostatWithEaFallback('prc_hicp_minr', { unit: 'RCH_A', coicop18: 'TOTAL' }, START_M, ['EA', 'EA21']);
+    return { source: 'Eurostat', dataset: 'prc_hicp_minr — HICP, all items (COICOP 2018 TOTAL), annual rate of change', frequency: 'M', unit: '%', unitLabel: 'Annual rate of change, %', ...r };
   },
   unemployment: async () => {
     const r = await eurostatWithEaFallback('une_rt_m', { s_adj: 'SA', age: 'TOTAL', unit: 'PC_ACT', sex: 'T' }, START_M);
@@ -149,17 +159,12 @@ const DATASETS = {
     return { source: 'ECB', dataset: 'EXR — Euro foreign exchange reference rate, daily', frequency: 'D', unit: 'USD per EUR', unitLabel: 'US dollars per euro', ...r };
   },
   lending: async () => {
-    // Loans to euro area households by purpose, outstanding amounts (EUR millions).
-    // 2250 households total; 2251 consumer credit; 2252 house purchase; 2253 other lending.
-    const PURPOSE = { 2250: ['total', 'Total loans to households'], 2251: ['consumer', 'Consumer credit'], 2252: ['house', 'House purchase'], 2253: ['other', 'Other lending'] };
-    // ADJUSTMENT and BS_REP_SECTOR are wildcarded; keep one series per purpose,
-    // preferring non-adjusted (N) data reported by MFIs excl. ESCB (A, then U).
-    const r = await ecb('BSI', 'M.U2...A20.A.1.U2.2250+2251+2252+2253.Z01.E', { startPeriod: START_M },
-      { seriesId: (row) => PURPOSE[row.BS_COUNT_SECTOR]?.[0] ?? row.BS_COUNT_SECTOR, label: (row) => PURPOSE[row.BS_COUNT_SECTOR]?.[1] ?? row.TITLE });
-    const rank = (k) => (k.includes('.N.') ? 0 : 2) + (/\.A\.A20\./.test(k) ? 0 : 1);
-    const best = new Map();
-    for (const s of r.series) if (!best.has(s.id) || rank(s.key) < rank(best.get(s.id).key)) best.set(s.id, s);
-    r.series = [...best.values()];
+    // Loans to euro area households (BS_COUNT_SECTOR 2250) by purpose, outstanding amounts,
+    // € millions, not seasonally adjusted. BS_ITEM: A20 total, A21 consumer credit,
+    // A22 house purchase, A23 other lending (verified with scripts/probe-sources.mjs).
+    const ITEM = { A20: ['total', 'Total loans to households'], A21: ['consumer', 'Consumer credit'], A22: ['house', 'House purchase'], A23: ['other', 'Other lending'] };
+    const r = await ecb('BSI', 'M.U2.N.A.A20+A21+A22+A23.A.1.U2.2250.Z01.E', { startPeriod: START_M },
+      { seriesId: (row) => ITEM[row.BS_ITEM]?.[0] ?? row.BS_ITEM, label: (row) => ITEM[row.BS_ITEM]?.[1] ?? row.TITLE });
     return { source: 'ECB', dataset: 'BSI — MFI loans to euro area households by purpose, outstanding amounts', frequency: 'M', unit: 'EUR millions', unitLabel: 'Outstanding amounts, € millions', ...r };
   },
 };
