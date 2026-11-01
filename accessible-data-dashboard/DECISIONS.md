@@ -76,3 +76,27 @@ A short rationale for every non-obvious choice. Newest at the bottom of each pha
 
 **D-032 · Placeholder font is Inter.**
 *Why:* It has tabular figures, distinguishable glyphs and wide availability. It will be swapped if the Accessible Design System specifies another family.
+
+## Phase 2: Prototype
+
+**D-040 · Real data comes from a GitHub Actions workflow, not from the dev container.**
+*Why:* The container's proxy blocks both APIs (D-005). `.github/workflows/fetch-data.yml` runs `scripts/fetch-data.mjs` on GitHub's runners and commits the snapshots to `public/data/`. It can be triggered manually or by changing the fetch script.
+
+**D-041 · Series codes were chosen from evidence, using `scripts/probe-sources.mjs`, not from memory.** The probe showed:
+- The ECB ICP HICP series stop at Dec 2025, after the 2026 move to COICOP 2018. HICP therefore comes from Eurostat `prc_hicp_minr` (`coicop18=TOTAL`, `unit=RCH_A`).
+- The euro area aggregate is now **EA21**, after Bulgaria joined in 2026. The fetcher tries EA21, then EA20, then EA.
+- Household lending by purpose is ECB BSI `BS_ITEM` A21, A22 and A23 for sector 2250, not sector sub-codes.
+
+**D-042 · Stable colour slots per country.** Each country has a preferred slot. If a slot is already taken, the country gets the next free one in canonical order (`assignSlots`). Removing a country never changes the colour of a country that kept its preferred slot. Charts show EA + up to 5 countries (the 6 encoding slots), and the table shows all of them.
+
+**D-043 · All app state lives in the URL query string; personal preferences live in localStorage.** Saved views store the same query string under a name. `sim.*` parameters (simulated states) are left out of shared links and saved views.
+
+**D-044 · Simulated states transform the real snapshot and mark it synthetic.** Values are regenerated from a seeded PRNG (mulberry32, seed 20261031), so synthetic numbers are never mistaken for real ones, and the data keeps its real shape. Simulated issues target series that are visible with the default filters.
+
+**D-045 · Charts are re-created only when their content changes.** The option object is compared by a JSON signature, with function bodies compared by their source. Re-creating charts on every render restarted the animations, which first showed up as half-drawn charts in screenshots.
+
+**D-046 · Narrow containers (< 520px) switch chart variants.** Line and area charts move their end labels into a key list below the chart, with dash and marker samples. The heatmap becomes a table, because 12 columns at 256px can't hold readable values.
+
+**D-047 · React Aria Components are the base for the interactive components.** Used for buttons, toggles, selects, checkbox and radio groups, dialogs, menus and tooltips; each is a candidate for the design system. The detail table is a native `<table>` with `<button>` elements in the `<th>` cells and `aria-sort`, which gives full control over the semantics.
+
+**D-048 · Staleness is computed against the snapshot's retrieval date, not "now".** This keeps the result deterministic for tests and honest about what the snapshot knew. The threshold is the publication lag plus one period plus 10 days.
