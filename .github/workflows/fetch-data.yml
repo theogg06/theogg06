@@ -10,6 +10,7 @@ on:
     branches: [claude/exciting-ptolemy-j2k6bk]
     paths:
       - accessible-data-dashboard/scripts/fetch-data.mjs
+      - accessible-data-dashboard/scripts/probe-sources.mjs
       - .github/workflows/fetch-data.yml
 
 permissions:
@@ -30,6 +31,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Probe source codes (diagnostic)
+        continue-on-error: true
+        run: node scripts/probe-sources.mjs
       - name: Fetch snapshots
         id: fetch
         continue-on-error: true

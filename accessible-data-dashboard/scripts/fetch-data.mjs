@@ -81,9 +81,9 @@ async function ecb(flow, key, params, { seriesId, label }) {
   }
   const series = [...byKey.values()].map(({ key: k, row, observations }) => ({
     id: seriesId(row),
-    key: `${flow}.${k}`,
+    key: k,
     label: label(row),
-    sourceTitle: row.TITLE || row.TITLE_COMPL || '',
+    sourceTitle: (row.TITLE || row.TITLE_COMPL || '').replace(/^"+|"+$/g, ''),
     observations: observations.sort((a, b) => a.period.localeCompare(b.period)),
   }));
   return { url, series };
@@ -165,6 +165,8 @@ const DATASETS = {
 };
 
 // ---------------------------------------------------------------- main
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) await main();
+async function main() {
 const wanted = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(DATASETS);
 await mkdir(OUT, { recursive: true });
 const manifestPath = join(OUT, 'manifest.json');
@@ -196,3 +198,4 @@ for (const id of wanted) {
 manifest.generatedAt = new Date().toISOString();
 await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 process.exit(failed ? 1 : 0);
+}
