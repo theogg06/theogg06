@@ -1,0 +1,17 @@
+{
+  "ci": {
+    "collect": {
+      "staticDistDir": "./dist",
+      "url": ["http://localhost/index.html", "http://localhost/index.html?page=detail&geo=ES", "http://localhost/index.html?t.inflation=table&t.unemployment=table"],
+      "numberOfRuns": 1,
+      "settings": { "onlyCategories": ["accessibility", "best-practices"], "chromeFlags": "--no-sandbox --headless=new" }
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": ["error", { "minScore": 1 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }]
+      }
+    },
+    "upload": { "target": "filesystem", "outputDir": "./lhci-report" }
+  }
+}

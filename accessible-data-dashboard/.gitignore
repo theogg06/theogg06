@@ -6,3 +6,5 @@ playwright-report/
 *.log
 src/styles/tokens.css
 src/styles/tokens.gen.ts
+lhci-report/
+.lighthouseci/

@@ -269,3 +269,10 @@ main { display: block; max-width: 1344px; margin: 0 auto; padding: var(--space-7
 
 /* Charts paint with CSS system colours themselves in forced-colors mode (D-050); don't let the UA flatten them. */
 @media (forced-colors: active) { .hc-container, .key-list__swatch { forced-color-adjust: none; } }
+
+/* Data notes must wrap long query URLs at 320 px (1.4.10). */
+.data-notes dl { grid-template-columns: minmax(0, max-content) minmax(0, 1fr); }
+.data-notes dd { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .data-notes dl { grid-template-columns: minmax(0, 1fr); } .data-notes dd { margin-bottom: var(--space-2); } }
+/* Links that are the only content of a table cell get a 24 px target (2.5.8). */
+.data-table th a, .data-table td a { display: inline-flex; align-items: center; min-height: 1.5rem; }

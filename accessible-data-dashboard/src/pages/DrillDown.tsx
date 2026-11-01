@@ -69,11 +69,14 @@ export function DrillDown() {
         <Popover className="popover"><ListBox className="listbox" items={COUNTRIES}>{(c) => <ListBoxItem id={c.id} className="listbox__item">{c.label}</ListBoxItem>}</ListBox></Popover>
       </Select>
 
-      <ul className="kpi-grid kpi-grid--3" aria-label="Latest values">
+      <section aria-labelledby="latest-h" className="section">
+      <h2 id="latest-h" className="h2">Latest values</h2>
+      <ul className="kpi-grid kpi-grid--3">
         <KpiCard id="d-country" label={`${name}, latest`} load={hicp} compute={kpi(cty, name, 'pct', `Above the euro area in ${above} of ${total} months shown`)} />
         <KpiCard id="d-ea" label="Euro area, latest" load={hicp} compute={kpi(ea, 'EA', 'pct', 'ECB medium-term target: 2.0%')} />
         <KpiCard id="d-gap" label={`Gap: ${name} minus euro area`} load={hicp} compute={kpi(gapSeries ?? undefined, 'gap', 'pp', 'Positive = higher inflation than the euro area')} />
       </ul>
+      </section>
 
       <div className="detail-grid">
         <ChartWidget id="detail" narrow={narrow} csvName={`inflation-${geo}`} title={`Monthly inflation, ${name} vs euro area`} subtitle="HICP all items, annual rate of change, %"

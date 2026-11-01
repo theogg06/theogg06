@@ -1,0 +1,52 @@
+# Accessible Data Dashboard — CI: typecheck, contrast, unit tests, build,
+# Playwright (axe on every page/state/theme, keyboard, reflow/zoom) and
+# Lighthouse accessibility (must score 100).
+name: CI
+
+on:
+  push:
+    paths: ['accessible-data-dashboard/**', '.github/workflows/ci.yml']
+  pull_request:
+    paths: ['accessible-data-dashboard/**', '.github/workflows/ci.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: accessible-data-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: accessible-data-dashboard/package-lock.json
+      - run: npm ci
+      - name: Design tokens + WCAG contrast check
+        run: npm run tokens && npm run contrast
+      - name: Typecheck
+        run: npx tsc -b
+      - name: Unit tests (summary generator, data, URL state)
+        run: npm test
+      - name: Build
+        run: npx vite build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E — axe, keyboard, reflow & zoom
+        run: npx playwright test
+      - name: Lighthouse accessibility
+        run: npx lhci autorun
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reports
+          path: |
+            accessible-data-dashboard/playwright-report
+            accessible-data-dashboard/lhci-report
+          retention-days: 14

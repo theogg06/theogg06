@@ -151,7 +151,7 @@ export function ManageViewsDialog({ isOpen, onClose, onSaveNew }: { isOpen: bool
             <div className="row row--end">
               <Button autoFocus onPress={close}>Keep view</Button>
               <Button variant="danger" icon="trash" onPress={() => {
-                const v = confirm!; deleteView(v.id); close(); setConfirm(null);
+                const v = confirm!; deleteView(v.id); close(); setConfirm(null); onClose();
                 showToast({ kind: 'success', message: `View "${v.name}" deleted.`, action: { label: 'Undo', onAction: () => { restoreView(v); announce(`View "${v.name}" restored.`); } } });
               }}>Delete view</Button>
             </div>

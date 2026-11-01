@@ -43,8 +43,8 @@ function CheckboxPicker<T extends string>({ label, summary, options, value, onCh
           <Dialog className="popover__dialog" aria-labelledby={labelId}>
             <CheckboxGroup value={value} onChange={(v) => onChange(v as T[])} aria-labelledby={labelId} className="checkbox-group">
               {hint && <p className="hint">{hint}</p>}
-              {options.map((o) => (
-                <Checkbox key={o.id} value={o.id} className="checkbox">
+              {options.map((o, i) => (
+                <Checkbox key={o.id} value={o.id} className="checkbox" autoFocus={i === 0}>
                   <span className="checkbox__box" aria-hidden="true"><Icon name="check" size={14} /></span>
                   {o.label}
                 </Checkbox>
