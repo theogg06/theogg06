@@ -120,3 +120,25 @@ A short rationale for every non-obvious choice. Newest at the bottom of each pha
 
 **D-055 · Sonification (stretch goal) is on the drill-down chart only, with a visible "Play as sound" button.**
 *Why:* It needs a user gesture to start audio, it has to be stoppable (the same button cancels), and its mapping (higher pitch = higher inflation) is announced before playback starts.
+
+## Phase 4: Testing
+
+**D-060 · axe runs on every page × simulated state × theme (33 runs), not only on the default page.**
+*Why:* Error, empty and partial states add markup (alerts, panels, buttons) that a default-page scan never sees. Simulated states are URL parameters, so each test is just a link.
+
+**D-061 · "Zoom" tests use CSS-pixel viewports (320 = 400%, 640 = 200% of 1280) plus a root font-size test for text-only zoom.**
+*Why:* Browser zoom changes the CSS-pixel viewport, which is what the layout responds to. Testing the equivalent viewport reproduces it deterministically in headless Chromium.
+
+**D-062 · Lighthouse accessibility must score 100 (CI error), best-practices ≥ 0.9 (warning).**
+*Why:* A score is a weak signal, but a fall from 100 is cheap to catch. The first run failed at 0.98 on a heading-order issue (KPI h3 directly after the h1 on the drill-down), and it was fixed.
+
+**D-063 · The usability kit uses decision tasks with prepared state links and keeps every result field empty.**
+*Why:* That's the brief's rule: nothing is invented. Tasks map to the hypothesis JTBD, so they can be revised together after the interviews.
+
+**D-064 · Bugs found by the automated tests were fixed, not suppressed.**
+*Why:* The bugs were: popover focus not moving to the first checkbox; the Undo toast unreachable behind an inert modal; long query URLs overflowing at 320 px; table links under 24 px; and the heading order. No axe rule is disabled.
+
+## Phase 5: Documentation
+
+**D-070 · The accessibility statement says "partially conformant, not yet verified by people with disabilities".**
+*Why:* Automated checks pass, but manual AT testing and usability sessions haven't run yet. Claiming full conformance would overstate the evidence.

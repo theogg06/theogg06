@@ -179,7 +179,7 @@ There is no horizontal page scroll at 320 CSS px. The only exception is the data
 - **Headings:** H1 for the page title, then H2 for Filters, Key indicators, Trends and Details. H3 is used for KPI labels and widget titles. Dialog titles are H2. No heading levels are skipped.
 - **Focus order:** 50 stops on the overview, numbered on page 07.
   - Skip link is 1, followed by the nav, display settings, page actions and the filters.
-  - Each widget has 6 stops: Chart, Table, Keys, More, the chart region, then Data notes.
+  - Each widget has 5 stops: the Chart/Table toggle (one stop; arrow keys switch, D-054), Keys, More, the chart region, then Data notes. The Figma annotation shows Chart and Table as two stops; the code follows the React Aria radio-group pattern.
   - Last come the table region and the sortable headers.
 - **Live regions:** a global polite status region, a polite loading status for each widget, an assertive region for widget errors, a polite tooltip mirror, and toasts. Messages are debounced by 500 ms, there is one message per user action, and nothing is announced on page load except errors.
 - **Focus style:** a 3px `focus/ring` outline with a 2px offset (`outline`, so it survives forced-colors). Its contrast is ≥ 3:1 on both the surface and canvas colours in every theme: at least 5.8 : 1 in light, at least 8.4 : 1 in dark and 14.7 : 1 in HC (`node scripts/check-contrast.mjs`).

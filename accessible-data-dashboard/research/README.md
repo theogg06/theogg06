@@ -1,6 +1,6 @@
 # Research kit
 
-Everything needed to run discovery interviews (Phase 0) and, later, usability sessions (`testing/`, Phase 4).
+Everything needed to run discovery interviews (Phase 0) and usability sessions ([`testing/`](testing/), Phase 4).
 
 > **Nothing in this folder is a research finding.** Personas and JTBD are hypotheses drawn from desk research. Results tables are blank on purpose. Real findings go in `notes/` and `synthesis/` (create these folders when you start, and keep raw notes out of the public repo if they're at all identifiable).
 

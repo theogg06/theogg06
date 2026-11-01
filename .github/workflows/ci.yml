@@ -17,6 +17,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: accessible-data-dashboard
@@ -41,7 +42,12 @@ jobs:
       - name: E2E — axe, keyboard, reflow & zoom
         run: npx playwright test
       - name: Lighthouse accessibility
-        run: npx lhci autorun
+        timeout-minutes: 8
+        run: |
+          # Use the Chromium Playwright just installed (same browser as the e2e tests).
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          echo "Using $CHROME_PATH"
+          npx lhci autorun
       - uses: actions/upload-artifact@v4
         if: always()
         with:
