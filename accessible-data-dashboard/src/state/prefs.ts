@@ -32,7 +32,7 @@ function apply() {
 
 if (typeof window !== 'undefined') {
   apply();
-  for (const q of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)']) window.matchMedia(q).addEventListener('change', () => { apply(); listeners.forEach((l) => l()); });
+  for (const q of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)', '(forced-colors: active)']) window.matchMedia(q).addEventListener('change', () => { apply(); listeners.forEach((l) => l()); });
 }
 
 export function setPrefs(patch: Partial<Prefs>) {
@@ -42,9 +42,10 @@ export function setPrefs(patch: Partial<Prefs>) {
   listeners.forEach((l) => l());
 }
 
-export function usePrefs(): Prefs & { resolvedTheme: ResolvedTheme } {
+export function usePrefs(): Prefs & { resolvedTheme: ResolvedTheme; forced: boolean } {
   const p = useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => prefs, () => prefs);
-  return { ...p, resolvedTheme: typeof window === 'undefined' ? 'light' : resolveTheme(p.theme) };
+  const forced = typeof window !== 'undefined' && window.matchMedia('(forced-colors: active)').matches;
+  return { ...p, resolvedTheme: typeof window === 'undefined' ? 'light' : resolveTheme(p.theme), forced };
 }
 
 export function prefersReducedMotion(): boolean {

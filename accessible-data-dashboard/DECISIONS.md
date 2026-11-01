@@ -100,3 +100,23 @@ A short rationale for every non-obvious choice. Newest at the bottom of each pha
 **D-047 · React Aria Components are the base for the interactive components.** Used for buttons, toggles, selects, checkbox and radio groups, dialogs, menus and tooltips; each is a candidate for the design system. The detail table is a native `<table>` with `<button>` elements in the `<th>` cells and `aria-sort`, which gives full control over the semantics.
 
 **D-048 · Staleness is computed against the snapshot's retrieval date, not "now".** This keeps the result deterministic for tests and honest about what the snapshot knew. The threshold is the publication lag plus one period plus 10 days.
+
+## Phase 3: Chart-level accessibility
+
+**D-050 · Forced-colors mode: we paint charts with CSS system colours ourselves and turn off Highcharts' automatic high-contrast theme.**
+*Why:* With `highContrastMode: 'auto'`, the screenshot under Chromium's forced-colors emulation showed the stacked-area fills disappear, the hatch vanish from the euro area bar, and the heatmap turn into a white block that hid every value. Mapping tokens to `CanvasText` / `Canvas` / `GrayText` / `Highlight`, with `forced-color-adjust: none` on the chart container, keeps the patterns, dashes, markers and printed values while still following the user's palette.
+
+**D-051 · Keyboard layer = Highcharts' built-in navigation plus a small capture-phase handler.**
+*Why:* Highcharts already gives a single tab stop, focusable point proxies with good labels, left/right point movement and a focus ring. The handler adds Up/Down (same date in the adjacent series; Highcharts' default moved within the series), Home/End, Page Up/Down, S (series summary via the live region), T (table view, with focus moved to the Table toggle), Enter (drill-down), Esc (close tooltip, then leave the chart) and ?. Single-key shortcuts only act while focus is inside the chart (2.1.4).
+
+**D-052 · Tooltip content is mirrored to the live region on pointer hover only.**
+*Why:* On keyboard focus the screen reader already reads the focused point's label. Mirroring that too would announce everything twice.
+
+**D-053 · The long summary is the chart's `accessibility.description`, in Highcharts' screen-reader section before the chart; the short summary is the visible caption.**
+*Why:* A hidden duplicate paragraph would be read twice in browse mode. In table view, the long summary is kept as a visually hidden paragraph, because the table doesn't state trends.
+
+**D-054 · The view toggle is React Aria's `ToggleButtonGroup`, which renders a radio group with one tab stop and arrow keys inside.**
+*Why:* The semantics are correct for an exclusive choice. The spec's "Chart, Table as two tab stops" is updated to one stop.
+
+**D-055 · Sonification (stretch goal) is on the drill-down chart only, with a visible "Play as sound" button.**
+*Why:* It needs a user gesture to start audio, it has to be stoppable (the same button cancels), and its mapping (higher pitch = higher inflation) is announced before playback starts.

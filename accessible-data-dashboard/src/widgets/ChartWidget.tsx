@@ -12,7 +12,7 @@ import type { Summary } from '../lib/summarize';
 import { downloadCsv } from '../lib/csv';
 import { openShortcuts } from '../components/ShortcutsDialog';
 
-export interface WidgetRenderArgs { data: WidgetData; narrow: boolean; summaryId: string; titleId: string; summary: Summary }
+export interface WidgetRenderArgs { data: WidgetData; narrow: boolean; summaryId: string; titleId: string; summary: Summary; title: string; toTable: () => void }
 
 export interface ChartWidgetProps {
   id: string;
@@ -55,7 +55,7 @@ export function ChartWidget(p: ChartWidgetProps) {
     setState((s) => ({ views: { ...s.views, [p.id]: v } }));
     announce(`${v === 'table' ? 'Table' : 'Chart'} view shown for ${p.title}.`);
   };
-  const args = data && summary ? { data, narrow: p.narrow, summaryId, titleId, summary } : null;
+  const args = data && summary ? { data, narrow: p.narrow, summaryId, titleId, summary, title: p.title, toTable: () => setView('table') } : null;
   const days = data ? staleDays(data.snapshot, data.series) : null;
   const issues = data?.issues ?? [];
 
@@ -132,7 +132,7 @@ export function ChartWidget(p: ChartWidgetProps) {
               {issues.filter((i) => i.kind !== 'provisional').length > 4 && <li>…and {issues.filter((i) => i.kind !== 'provisional').length - 4} more (see table).</li>}
             </ul>
           )}
-          <p id={summaryId} className="sr-only">{args.summary.long}</p>
+          {view === 'table' && <p id={summaryId} className="sr-only">{args.summary.long}</p>}
           <div className="widget__body">{view === 'chart' ? p.renderChart(args) : p.renderTable(args)}</div>
           <p className="widget__caption">{args.summary.short}</p>
         </>

@@ -3,7 +3,7 @@
  * encodings (colour + dash + marker + direct label; areas/bars: colour +
  * pattern + direct label) — design/SPEC.md §4.
  */
-import { Highcharts, baseOptions, cssVar, hatch, patternFill, slotStyle, type ChartOptions } from './highcharts';
+import { Highcharts, baseOptions, cssVar, forcedColors, hatch, patternFill, slotStyle, type ChartOptions } from './highcharts';
 import type { Series } from '../data/types';
 import { formatNumber, formatPeriod, formatValue, periodToUtc } from '../data/format';
 
@@ -30,15 +30,38 @@ function endLabels(getItems: (chart: Highcharts.Chart) => { y: number; text: str
   };
 }
 
-export interface LineInput { series: Series[]; slots: Map<string, number>; unit: string; endLabels: boolean; valueSuffix: string; referenceLine?: { value: number; label: string } }
+export interface LineInput { series: Series[]; slots: Map<string, number>; unit: string; endLabels: boolean; valueSuffix: string; referenceLine?: { value: number; label: string }; plausible?: [number, number] }
 
-export function buildLine({ series, slots, unit, endLabels: withLabels, valueSuffix, referenceLine }: LineInput): ChartOptions {
+/** Mark values above the visible axis at the plot's top edge with an arrow + exact value (design/SPEC.md §3, D-025). */
+function offScaleFlags(chart: Highcharts.Chart, valueSuffix: string) {
+  const c = chart as Highcharts.Chart & { offScaleGroup?: Highcharts.SVGElement };
+  c.offScaleGroup?.destroy();
+  const g = chart.renderer.g('off-scale').attr({ zIndex: 7, 'aria-hidden': 'true' }).add();
+  c.offScaleGroup = g;
+  const max = chart.yAxis[0].getExtremes().max;
+  for (const s of chart.series) for (const pt of s.points) {
+    if (pt.y == null || pt.y <= max) continue;
+    const x = chart.plotLeft + (pt.plotX ?? 0);
+    const y = chart.plotTop + 2;
+    chart.renderer.path(['M', x - 7, y + 10, 'L', x, y, 'L', x + 7, y + 10, 'Z'] as unknown as Highcharts.SVGPathArray).attr({ fill: cssVar('status/danger-text') }).add(g);
+    const label = `${(s.options as { custom?: { short?: string } }).custom?.short ?? s.name} ${formatPeriod((pt.options as { custom?: { period: string } }).custom?.period ?? '')}: ${formatNumber(pt.y)}${valueSuffix} (off scale)`;
+    const t = chart.renderer.label(label, x + 10, y - 2, 'rect', undefined, undefined, false, false, 'off-scale-label').attr({ fill: cssVar('status/danger-bg'), stroke: cssVar('status/danger-text'), 'stroke-width': 1, r: 4, padding: 4 }).css({ color: cssVar('status/danger-text'), fontSize: '13px', fontWeight: '600' }).add(g);
+    const bb = t.getBBox(); if (x + 10 + bb.width > chart.plotLeft + chart.plotWidth) t.attr({ x: x - 10 - bb.width });
+  }
+}
+
+export function buildLine({ series, slots, unit, endLabels: withLabels, valueSuffix, referenceLine, plausible }: LineInput): ChartOptions {
+  const inRange = series.flatMap((s) => s.observations.map((o) => o.value)).filter((v): v is number => v != null && (!plausible || (v >= plausible[0] && v <= plausible[1])));
+  const hasOff = !!plausible && series.some((s) => s.observations.some((o) => o.value != null && o.value > plausible[1]));
+  const axisMax = hasOff ? Math.ceil(Math.max(...inRange) * 1.25) : undefined;
+  const labelsFn = withLabels ? endLabels((c) => c.series.map((s) => { const last = [...s.points].reverse().find((p) => p.y != null); const y = last && axisMax != null && (last.y ?? 0) > axisMax ? c.plotTop : (last?.plotY ?? NaN) + c.plotTop; return { y, text: `${(s.options as { custom?: { short?: string } }).custom?.short ?? s.name} ${formatNumber(last?.y ?? null)}${valueSuffix}`, slot: slots.get((s.options as { id?: string }).id ?? '') ?? 1 }; })) : null;
+  const render = function (this: Highcharts.Chart) { labelsFn?.call(this); if (hasOff) offScaleFlags(this, valueSuffix); };
   const longest = Math.max(...series.map((s) => s.observations.length), 1);
   const markerEvery = longest > 24 ? 6 : longest > 12 ? 3 : 1;
   return merge(baseOptions(), {
-    chart: { type: 'line', marginRight: withLabels ? 92 : 12, events: withLabels ? { render: endLabels((c) => c.series.map((s) => { const last = [...s.points].reverse().find((p) => p.y != null); return { y: (last?.plotY ?? NaN) + c.plotTop, text: `${(s.options as { custom?: { short?: string } }).custom?.short ?? s.name} ${formatNumber(last?.y ?? null)}${valueSuffix}`, slot: slots.get((s.options as { id?: string }).id ?? '') ?? 1 }; })) } : undefined },
+    chart: { type: 'line', marginRight: withLabels ? 92 : 12, marginTop: hasOff ? 28 : undefined, events: { render } },
     xAxis: { type: 'datetime', tickLength: 4, labels: { format: '{value:%b %Y}' }, crosshair: { color: cssVar('border/strong'), dashStyle: 'Dash', width: 1 } },
-    yAxis: { min: Math.min(0, ...series.flatMap((s) => s.observations.map((o) => o.value ?? 0))), labels: { format: `{value}${valueSuffix}` }, plotLines: referenceLine ? [{ value: referenceLine.value, color: cssVar('text/secondary'), dashStyle: 'Dot', width: 1.5, zIndex: 3, label: { text: referenceLine.label, align: 'left', x: 4, y: 14, style: { color: cssVar('text/secondary'), fontSize: '13px' } } }] : [] },
+    yAxis: { min: Math.min(0, ...inRange), max: axisMax, labels: { format: `{value}${valueSuffix}` }, plotLines: referenceLine ? [{ value: referenceLine.value, color: cssVar('text/secondary'), dashStyle: 'Dot', width: 1.5, zIndex: 3, label: { text: referenceLine.label, align: 'left', x: 4, y: 14, style: { color: cssVar('text/secondary'), fontSize: '13px' } } }] : [] },
     tooltip: { shared: false, valueDecimals: 1, valueSuffix, xDateFormat: '%B %Y' },
     plotOptions: { series: { connectNulls: false, marker: { enabled: false, radius: 4.5, lineColor: cssVar('bg/surface'), lineWidth: 1 } } },
     accessibility: { point: { valueSuffix, valueDecimals: 1, dateFormat: '%B %Y' }, series: { descriptionFormat: '{seriesDescription}' } } as Highcharts.AccessibilityOptions,
@@ -95,7 +118,7 @@ export interface HeatInput { series: Series[]; periods: string[]; valueSuffix: s
 export function buildHeatmap({ series, periods, valueSuffix, bins }: HeatInput): ChartOptions {
   const binOf = (v: number) => { let b = 1; for (const t of bins) if (v >= t) b++; return Math.min(b, 5); };
   const labels = ['< ' + bins[0], `${bins[0]}–${bins[1]}`, `${bins[1]}–${bins[2]}`, `${bins[2]}–${bins[3]}`, '≥ ' + bins[3]];
-  const hc = document.documentElement.dataset.theme === 'hc';
+  const hc = document.documentElement.dataset.theme === 'hc' || forcedColors();
   const data: Highcharts.PointOptionsObject[] = [];
   series.forEach((s, y) => periods.forEach((p, x) => {
     const o = s.observations.find((ob) => ob.period === p);
@@ -106,12 +129,12 @@ export function buildHeatmap({ series, periods, valueSuffix, bins }: HeatInput):
   }));
   return merge(baseOptions(), {
     chart: { type: 'heatmap', marginTop: 4 },
-    xAxis: { categories: periods.map((p) => formatPeriod(p).slice(0, 3)), min: -0.5, max: periods.length - 0.5, startOnTick: false, endOnTick: false, opposite: true, lineWidth: 0, labels: { style: { color: cssVar('text/secondary') } } },
+    xAxis: { categories: periods.map((p) => formatPeriod(p).slice(0, 3)), min: -0.5, max: periods.length - 0.5, startOnTick: false, endOnTick: false, tickPositions: periods.map((_, i) => i), opposite: true, lineWidth: 0, labels: { style: { color: cssVar('text/secondary') } } },
     yAxis: { categories: series.map((s) => s.label), reversed: true, title: undefined, gridLineWidth: 0, labels: { style: { color: cssVar('text/primary'), fontSize: '14px' } } },
     colorAxis: { dataClasses: [1, 2, 3, 4, 5].map((b, i) => ({ from: i === 0 ? -100 : bins[i - 1], to: i === 4 ? 100 : bins[i], color: cssVar(`chart/seq-${b}`), name: labels[i] + (i === 4 ? valueSuffix : '') })) },
     legend: { enabled: true, align: 'left', verticalAlign: 'bottom', symbolRadius: 2, itemStyle: { color: cssVar('text/primary'), fontWeight: '400' }, title: { text: 'Annual rate, %', style: { color: cssVar('text/secondary'), fontWeight: '400' } } },
     tooltip: { formatter: function (this: unknown): string { const ctx = this as { point?: unknown }; const p = (ctx.point ?? ctx) as Highcharts.Point & { value: number | null; custom: { period: string } }; return `<b>${series[p.y ?? 0]?.label}</b> · ${formatPeriod(p.custom.period)}<br/>${p.value == null ? 'No data' : formatValue(p.value, '%')}`; } },
-    plotOptions: { heatmap: { borderWidth: hc ? 1 : 2, borderColor: hc ? cssVar('border/subtle') : cssVar('bg/surface'), nullColor: cssVar('bg/subtle'), dataLabels: { enabled: true, format: '{point.value:.1f}', nullFormat: '—', style: { fontSize: '13px', fontWeight: '400', textOutline: 'none' } } } },
+    plotOptions: { heatmap: { borderWidth: hc ? 1 : 2, borderColor: forcedColors() ? 'CanvasText' : hc ? cssVar('border/subtle') : cssVar('bg/surface'), nullColor: cssVar('bg/subtle'), dataLabels: { enabled: true, format: '{point.value:.1f}', nullFormat: '—', style: { fontSize: '13px', fontWeight: '400', textOutline: 'none' } } } },
     accessibility: { point: { valueSuffix, valueDecimals: 1, descriptionFormatter: (p: Highcharts.Point) => { const q = p as Highcharts.Point & { value: number | null; custom: { period: string } }; return `${series[q.y ?? 0]?.label}, ${formatPeriod(q.custom.period, true)}: ${q.value == null ? 'no data' : formatValue(q.value, '%')}.`; } } } as Highcharts.AccessibilityOptions,
     series: [{ type: 'heatmap', name: 'Annual rate of change', data }],
   } as ChartOptions);

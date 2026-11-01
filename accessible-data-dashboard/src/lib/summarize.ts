@@ -31,7 +31,7 @@ export interface Summary { long: string; short: string }
 interface Pt { period: string; value: number; status?: string }
 const pts = (s: Series): Pt[] => s.observations.filter((o): o is Pt => o.value != null);
 const FREQ = { M: 'monthly', Q: 'quarterly', D: 'daily' } as const;
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const plural = (n: number, w: string) => `${n} ${n === 1 || w === 'series' ? w : w.endsWith('y') ? w.slice(0, -1) + 'ies' : w + 's'}`;
 
 export function trendWord(first: number, last: number, range: number): 'rising' | 'falling' | 'broadly flat' {
   const d = last - first;
@@ -126,3 +126,16 @@ export function summarize(input: SummaryInput): Summary {
 function verb(t: string) { return t === 'rising' ? 'rose' : t === 'falling' ? 'fell' : 'stayed broadly flat'; }
 function cap(s: string) { return s[0].toUpperCase() + s.slice(1); }
 function ordinal(n: number) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+
+/** One-sentence summary of a single series (S key inside a chart). Deterministic. */
+export function seriesSentence(s: Series, valueSuffix: string, digits = 1): string {
+  const p = pts(s);
+  const total = s.observations.length;
+  const missing = total - p.length;
+  if (!p.length) return `${s.label}: no data in the selected period.`;
+  const f = (v: number) => `${formatNumber(v, digits)}${valueSuffix}`;
+  const { min, max } = extremes(p);
+  const first = p[0], last = p[p.length - 1];
+  const trend = trendWord(first.value, last.value, max.value - min.value);
+  return `${s.label}: ${trend}, from ${f(first.value)} (${formatPeriod(first.period)}) to ${f(last.value)} (${formatPeriod(last.period)}${statusNote(last.status)}); low ${f(min.value)} (${formatPeriod(min.period)}); high ${f(max.value)} (${formatPeriod(max.period)}); ${plural(p.length, 'value')}, ${missing ? `${missing} missing` : 'none missing'}.`;
+}

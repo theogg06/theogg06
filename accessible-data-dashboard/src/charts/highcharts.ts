@@ -7,6 +7,7 @@ import Highcharts from 'highcharts/esm/highcharts.js';
 import 'highcharts/esm/modules/accessibility.js';
 import 'highcharts/esm/modules/pattern-fill.js';
 import 'highcharts/esm/modules/heatmap.js';
+import 'highcharts/esm/modules/sonification.js';
 import { chartTokens } from '../styles/tokens.gen';
 import { prefersReducedMotion } from '../state/prefs';
 
@@ -21,8 +22,25 @@ symbols.cross = (x, y, w, h) => {
   return ['M', x + t, y, 'L', x + 2 * t, y, 'L', x + 2 * t, y + t, 'L', x + w, y + t, 'L', x + w, y + 2 * t, 'L', x + 2 * t, y + 2 * t, 'L', x + 2 * t, y + h, 'L', x + t, y + h, 'L', x + t, y + 2 * t, 'L', x, y + 2 * t, 'L', x, y + t, 'L', x + t, y + t, 'Z'];
 };
 
+export function forcedColors(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(forced-colors: active)').matches;
+}
+
+/**
+ * In forced-colors mode (Windows High Contrast) map tokens to CSS system
+ * colours, so charts follow the user's palette while patterns, dashes,
+ * markers and printed values keep carrying identity (D-050).
+ */
+function systemColor(name: string): string {
+  if (/^bg\/(surface|canvas|subtle)$|^chart\/seq-\d$/.test(name)) return 'Canvas';
+  if (name === 'chart/grid') return 'GrayText';
+  if (name === 'focus/ring') return 'Highlight';
+  return 'CanvasText';
+}
+
 /** Read the current theme's tokens from CSS custom properties. */
 export function cssVar(name: string): string {
+  if (forcedColors()) return systemColor(name);
   return getComputedStyle(document.documentElement).getPropertyValue(`--color-${name.replace(/\//g, '-')}`).trim();
 }
 
@@ -101,7 +119,11 @@ export function baseOptions(): Highcharts.Options {
         enabled: true,
         focusBorder: { enabled: true, hideBrowserFocusOutline: true, style: { color: cssVar('focus/ring'), lineWidth: 3, borderRadius: 4 } },
       },
-      highContrastMode: 'auto',
+      // We handle forced colours ourselves (system colours + patterns); Highcharts' auto theme dropped area fills and heatmap values.
+      highContrastMode: false as unknown as string, // runtime accepts false (see accessibility.src.js); typings say string
     } as Highcharts.AccessibilityOptions,
   };
 }
+
+// Exposed for automated tests (Playwright reads chart.highlightedPoint). Read-only use.
+if (typeof window !== 'undefined') (window as unknown as { __Highcharts: typeof Highcharts }).__Highcharts = Highcharts;

@@ -4,7 +4,8 @@ import { KpiCard, type KpiValue } from '../widgets/KpiCard';
 import { useSnapshot, useWidth, type Load } from '../widgets/useWidgetData';
 import { TimeSeriesTable, CategoryTable, MatrixTable } from '../widgets/tables';
 import { DetailTable } from '../widgets/DetailTable';
-import { HighchartsView } from '../charts/HighchartsView';
+import { ChartRegion } from '../charts/ChartRegion';
+import { formatValue } from '../data/format';
 import { buildBar, buildHeatmap, buildLine, buildStackedArea } from '../charts/builders';
 import { FilterBar } from '../components/Filters';
 import { PageActions } from '../components/ViewDialogs';
@@ -24,7 +25,7 @@ export function Overview() {
   const prefs = usePrefs();
   const [mainRef, mainW] = useWidth<HTMLDivElement>();
   const narrow = mainW < 520;
-  const renderKey = `${prefs.resolvedTheme}-${prefs.density}`;
+  const renderKey = `${prefs.resolvedTheme}-${prefs.density}-${prefs.forced}`;
 
   const hicp = useSnapshot('hicp', s.sim.inflation);
   const hicpHeat = useSnapshot('hicp', s.sim.heatmap);
@@ -82,9 +83,11 @@ export function Overview() {
             load={hicp} emptyFixes={emptyFixes}
             select={(snap) => toWidgetData(snap, selectSeries(snap, { geos: chartCountries, from: s.from, to }))}
             summarize={(d) => summarize({ kind: 'line', measure: 'HICP annual rate of change in percent', valueSuffix: '%', changeUnit: 'percentage points', frequency: 'M', series: d.series, referenceId: 'EA', issues: d.issues })}
-            renderChart={({ data, narrow: n, summaryId }) => (
-              <div aria-describedby={summaryId}>
-                <HighchartsView renderKey={renderKey} height={n ? 260 : 320} options={buildLine({ series: data.series, slots, unit: '%', valueSuffix: '%', endLabels: !n })} />
+            renderChart={({ data, narrow: n, summary, title, toTable }) => (
+              <div>
+                <ChartRegion title={title} description={summary.long} series={data.series} valueSuffix="%" onTable={toTable} renderKey={renderKey} height={n ? 260 : 320}
+                  options={buildLine({ series: data.series, slots, unit: '%', valueSuffix: '%', endLabels: !n, plausible: DATASETS.hicp.plausible })}
+                  describePoint={pointText('%')} onEnter={drill} />
                 {n && <KeyList items={data.series.map((x) => ({ id: x.id, label: x.label, slot: slots.get(x.id) ?? 1, value: lastObservation(x)?.value ?? null }))} suffix="%" />}
                 {s.countries.length > MAX_CHART_COUNTRIES && <p className="small muted">Chart shows the first {MAX_CHART_COUNTRIES} selected countries; the table shows all.</p>}
               </div>
@@ -95,9 +98,12 @@ export function Overview() {
             load={unemp} emptyFixes={emptyFixes}
             select={(snap) => { const ser = selectSeries(snap, { geos: s.countries.length ? s.countries : COUNTRIES.map((c) => c.id), to }); return toWidgetData(snap, ser); }}
             summarize={(d) => summarize({ kind: 'bar', measure: 'unemployment rate in percent', valueSuffix: '%', changeUnit: 'pp', frequency: 'M', series: d.series.filter((x) => lastObservation(x)), referenceId: 'EA', issues: d.issues })}
-            renderChart={({ data, narrow: n, summaryId }) => {
+            renderChart={({ data, narrow: n, summary, title, toTable }) => {
               const items = data.series.map((x) => ({ id: x.id, label: x.label, value: lastObservation(x)?.value ?? null, highlight: x.id === 'EA' })).filter((i) => i.value != null).sort((a, b) => (b.value! - a.value!));
-              return <div aria-describedby={summaryId}><HighchartsView renderKey={renderKey} height={Math.max(220, items.length * (n ? 40 : 34) + 40)} options={buildBar({ items, unit: '%', valueSuffix: '%' })} /></div>;
+              const ordered = items.map((i) => data.series.find((x) => x.id === i.id)!);
+              return <ChartRegion title={title} description={summary.long} series={[{ id: 'bar', key: '', label: 'Unemployment rate by country', observations: ordered.map((x) => ({ period: x.label, value: lastObservation(x)?.value ?? null })) }]} valueSuffix="%" onTable={toTable} renderKey={renderKey}
+                height={Math.max(220, items.length * (n ? 40 : 34) + 40)} options={buildBar({ items, unit: '%', valueSuffix: '%' })}
+                describePoint={(pt) => `${pt.name}: ${formatValue(pt.y ?? null, '%')}`} onEnter={(pt) => { const id = (pt.options as { custom?: { id?: string } }).custom?.id; if (!id || id === 'EA') return false; setState({ page: 'detail', detailGeo: id }, { push: true }); return true; }} />;
             }}
             renderTable={({ data }) => { const rows = data.series.map((x) => ({ label: x.label, value: lastObservation(x)?.value ?? null, strong: x.id === 'EA' })).sort((a, b) => (b.value ?? -1) - (a.value ?? -1)); return <CategoryTable id="unemp-table" caption={`Unemployment rate (%), ${formatPeriod(maxPeriod(data.series) ?? to)}, highest first.`} rows={rows} valueHeader="Unemployment (%)" />; }}
           />}
@@ -105,9 +111,11 @@ export function Overview() {
             load={lending} emptyFixes={emptyFixes}
             select={(snap) => toWidgetData(snap, ['house', 'consumer', 'other'].map((id) => clipRange(snap.series.find((x) => x.id === id) ?? { id, key: '', label: id, observations: [] }, s.from, to)))}
             summarize={(d) => summarize({ kind: 'area', measure: 'loans to euro area households by purpose, € trillion outstanding', valueSuffix: ' tn', changeUnit: 'tn', frequency: 'M', series: d.series, issues: d.issues, scale: 1e6, digits: 2 })}
-            renderChart={({ data, narrow: n, summaryId }) => (
-              <div aria-describedby={summaryId}>
-                <HighchartsView renderKey={renderKey} height={n ? 260 : 320} options={buildStackedArea({ series: data.series, slots: [1, 2, 3], valueSuffix: ' tn', scale: 1e6, scaleLabel: '€ trillion', endLabels: !n })} />
+            renderChart={({ data, narrow: n, summary, title, toTable }) => (
+              <div>
+                <ChartRegion title={title} description={summary.long} series={data.series.map((x) => ({ ...x, observations: x.observations.map((o) => ({ ...o, value: o.value == null ? null : o.value / 1e6 })) }))} valueSuffix=" tn" onTable={toTable} renderKey={renderKey} height={n ? 260 : 320}
+                  options={buildStackedArea({ series: data.series, slots: [1, 2, 3], valueSuffix: ' tn', scale: 1e6, scaleLabel: '€ trillion', endLabels: !n })}
+                  describePoint={pointText(' tn', 2)} />
                 {n && <KeyList items={data.series.map((x, i) => ({ id: x.id, label: x.label, slot: i + 1, value: (lastObservation(x)?.value ?? NaN) / 1e6, pattern: true }))} suffix=" tn" digits={2} />}
               </div>
             )}
@@ -117,12 +125,15 @@ export function Overview() {
             load={hicpHeat} emptyFixes={emptyFixes}
             select={(snap) => { const toI = periodToMonthIndex(to); return toWidgetData(snap, selectSeries(snap, { geos: s.countries, from: monthIndexToPeriod(toI - 11), to })); }}
             summarize={(d) => summarize({ kind: 'heatmap', measure: 'HICP annual rate of change in percent', valueSuffix: '%', changeUnit: 'pp', frequency: 'M', series: d.series, issues: d.issues })}
-            renderChart={({ data, narrow: n, summaryId }) => {
+            renderChart={({ data, narrow: n, summary, title, toTable }) => {
               const toI = periodToMonthIndex(maxPeriod(data.series) ?? to);
               const periods = Array.from({ length: 12 }, (_, i) => monthIndexToPeriod(toI - 11 + i));
               return n
                 ? <MatrixTable id="heat-narrow" caption="Narrow screens show the heatmap as a table. HICP annual rate, %." series={data.series} periods={periods} />
-                : <div aria-describedby={summaryId}><HighchartsView renderKey={renderKey} height={Math.max(200, data.series.length * 34 + 90)} options={buildHeatmap({ series: data.series, periods, valueSuffix: '%', bins: [1, 2, 3, 4] })} /></div>;
+                : <ChartRegion title={title} description={summary.long} series={data.series} valueSuffix="%" onTable={toTable} renderKey={renderKey} height={Math.max(200, data.series.length * 34 + 90)}
+                    options={buildHeatmap({ series: data.series, periods, valueSuffix: '%', bins: [1, 2, 3, 4] })}
+                    describePoint={(pt) => { const q = pt as typeof pt & { value: number | null; custom: { period: string } }; return `${data.series[q.y ?? 0]?.label}, ${formatPeriod(q.custom.period)}: ${q.value == null ? 'no data' : formatValue(q.value, '%')}`; }}
+                    onEnter={(pt) => { const id = data.series[pt.y ?? -1]?.id; if (!id || id === 'EA') return false; setState({ page: 'detail', detailGeo: id }, { push: true }); return true; }} />;
             }}
             renderTable={({ data }) => { const toI = periodToMonthIndex(maxPeriod(data.series) ?? to); return <MatrixTable id="heat-table" caption="HICP annual rate of change (%), countries by month." series={data.series} periods={Array.from({ length: 12 }, (_, i) => monthIndexToPeriod(toI - 11 + i))} />; }}
           />}
@@ -136,6 +147,9 @@ export function Overview() {
     </div>
   );
 }
+
+const drill = (pt: { series: { options: { id?: string } } }) => { const id = pt.series.options.id; if (!id || id === 'EA') return false; setState({ page: 'detail', detailGeo: id }, { push: true }); return true; };
+const pointText = (suffix: string, digits = 1) => (pt: { series: { name: string }; y?: number | null; options: unknown }) => `${pt.series.name}, ${formatPeriod(((pt.options as { custom?: { period?: string } }).custom?.period) ?? '')}: ${pt.y == null ? 'no data' : formatNumber(pt.y, digits) + suffix}`;
 
 /** Rate KPIs: latest value, change vs previous period in pp. */
 function kpiRate(load: Load, geo: string, context: string, _vs: string): KpiValue | null {

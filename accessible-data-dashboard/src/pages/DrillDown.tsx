@@ -3,7 +3,8 @@ import { ChartWidget } from '../widgets/ChartWidget';
 import { KpiCard } from '../widgets/KpiCard';
 import { useSnapshot, useWidth } from '../widgets/useWidgetData';
 import { TimeSeriesTable } from '../widgets/tables';
-import { HighchartsView } from '../charts/HighchartsView';
+import { ChartRegion } from '../charts/ChartRegion';
+import { DATASETS } from '../data/registry';
 import { buildLine } from '../charts/builders';
 import { KeyList } from '../charts/KeyList';
 import { PageActions } from '../components/ViewDialogs';
@@ -79,9 +80,11 @@ export function DrillDown() {
           load={hicp}
           select={(sn) => toWidgetData(sn, selectSeries(sn, { geos: [geo], from: s.from, to }))}
           summarize={(d) => summarize({ kind: 'line', measure: 'HICP annual rate of change in percent', valueSuffix: '%', changeUnit: 'percentage points', frequency: 'M', series: d.series, referenceId: 'EA', issues: d.issues })}
-          renderChart={({ data, narrow: n, summaryId }) => (
-            <div aria-describedby={summaryId}>
-              <HighchartsView renderKey={`${prefs.resolvedTheme}-${prefs.density}-${geo}`} height={n ? 260 : 360} options={buildLine({ series: data.series, slots, unit: '%', valueSuffix: '%', endLabels: !n, referenceLine: { value: 2, label: 'ECB target 2.0%' } })} />
+          renderChart={({ data, narrow: n, summary, title, toTable }) => (
+            <div>
+              <ChartRegion sonify title={title} description={summary.long} series={data.series} valueSuffix="%" onTable={toTable} renderKey={`${prefs.resolvedTheme}-${prefs.density}-${prefs.forced}-${geo}`} height={n ? 260 : 360}
+                options={buildLine({ series: data.series, slots, unit: '%', valueSuffix: '%', endLabels: !n, referenceLine: { value: 2, label: 'ECB target 2.0%' }, plausible: DATASETS.hicp.plausible })}
+                describePoint={(pt) => `${pt.series.name}, ${formatPeriod(((pt.options as { custom?: { period?: string } }).custom?.period) ?? '')}: ${pt.y == null ? 'no data' : formatNumber(pt.y) + '%'}`} />
               {n && <KeyList items={data.series.map((x) => ({ id: x.id, label: x.label, slot: slots.get(x.id) ?? 1, value: lastObservation(x)?.value ?? null }))} suffix="%" />}
             </div>
           )}

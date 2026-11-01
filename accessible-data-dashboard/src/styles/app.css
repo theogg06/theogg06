@@ -266,3 +266,6 @@ main { display: block; max-width: 1344px; margin: 0 auto; padding: var(--space-7
   .appbar__nav a[aria-current='page'] { border-bottom-color: Highlight; }
 }
 .field__control .listbox__check { display: none; }
+
+/* Charts paint with CSS system colours themselves in forced-colors mode (D-050); don't let the UA flatten them. */
+@media (forced-colors: active) { .hc-container, .key-list__swatch { forced-color-adjust: none; } }
