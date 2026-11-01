@@ -31,7 +31,7 @@ const LICENCE = {
 
 /** ISO 3166 alpha-2 (ECB uses U2 / Eurostat EA20 for the euro area) → our geo id + label. */
 const GEO = {
-  U2: ['EA', 'Euro area'], EA20: ['EA', 'Euro area'], EA: ['EA', 'Euro area'],
+  U2: ['EA', 'Euro area'], EA21: ['EA', 'Euro area'], EA20: ['EA', 'Euro area'], EA: ['EA', 'Euro area'],
   DE: ['DE', 'Germany'], FR: ['FR', 'France'], IT: ['IT', 'Italy'], ES: ['ES', 'Spain'],
   NL: ['NL', 'Netherlands'], BE: ['BE', 'Belgium'], AT: ['AT', 'Austria'], PT: ['PT', 'Portugal'],
   EL: ['GR', 'Greece'], GR: ['GR', 'Greece'], FI: ['FI', 'Finland'], IE: ['IE', 'Ireland'],
