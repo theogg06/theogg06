@@ -1,31 +1,32 @@
 {
-  "generatedAt": "2026-11-01T17:34:05.830Z",
+  "generatedAt": "2026-11-01T17:35:46.573Z",
   "datasets": {
     "hicp": {
       "file": "hicp.json",
-      "source": "ECB",
-      "retrievedAt": "2026-11-01T17:34:04.374Z",
+      "source": "Eurostat",
+      "retrievedAt": "2026-11-01T17:35:45.388Z",
       "series": [
-        "AT",
+        "EA",
         "BE",
         "DE",
-        "ES",
-        "FI",
-        "FR",
-        "GR",
         "IE",
+        "GR",
+        "ES",
+        "FR",
         "IT",
         "NL",
+        "AT",
         "PT",
-        "EA"
+        "FI"
       ],
-      "lastPeriod": "2025-12"
+      "lastPeriod": "2026-09"
     },
     "unemployment": {
       "file": "unemployment.json",
       "source": "Eurostat",
-      "retrievedAt": "2026-11-01T17:34:04.859Z",
+      "retrievedAt": "2026-11-01T17:35:45.524Z",
       "series": [
+        "EA",
         "BE",
         "DE",
         "IE",
@@ -43,7 +44,7 @@
     "debt": {
       "file": "debt.json",
       "source": "Eurostat",
-      "retrievedAt": "2026-11-01T17:34:05.043Z",
+      "retrievedAt": "2026-11-01T17:35:45.649Z",
       "series": [
         "EA",
         "BE",
@@ -63,7 +64,7 @@
     "fx": {
       "file": "fx.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:34:05.283Z",
+      "retrievedAt": "2026-11-01T17:35:46.281Z",
       "series": [
         "CHF",
         "GBP",
@@ -75,7 +76,7 @@
     "fx-daily": {
       "file": "fx-daily.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:34:05.574Z",
+      "retrievedAt": "2026-11-01T17:35:46.375Z",
       "series": [
         "USD"
       ],
@@ -84,9 +85,12 @@
     "lending": {
       "file": "lending.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:34:05.829Z",
+      "retrievedAt": "2026-11-01T17:35:46.570Z",
       "series": [
-        "total"
+        "total",
+        "consumer",
+        "house",
+        "other"
       ],
       "lastPeriod": "2026-09"
     }
