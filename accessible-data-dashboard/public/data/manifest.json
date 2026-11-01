@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-01T17:31:33.514Z",
+  "generatedAt": "2026-11-01T17:34:05.830Z",
   "datasets": {
     "hicp": {
       "file": "hicp.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:31:32.219Z",
+      "retrievedAt": "2026-11-01T17:34:04.374Z",
       "series": [
         "AT",
         "BE",
@@ -24,7 +24,7 @@
     "unemployment": {
       "file": "unemployment.json",
       "source": "Eurostat",
-      "retrievedAt": "2026-11-01T17:31:32.676Z",
+      "retrievedAt": "2026-11-01T17:34:04.859Z",
       "series": [
         "BE",
         "DE",
@@ -43,7 +43,7 @@
     "debt": {
       "file": "debt.json",
       "source": "Eurostat",
-      "retrievedAt": "2026-11-01T17:31:32.856Z",
+      "retrievedAt": "2026-11-01T17:34:05.043Z",
       "series": [
         "EA",
         "BE",
@@ -63,7 +63,7 @@
     "fx": {
       "file": "fx.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:31:33.068Z",
+      "retrievedAt": "2026-11-01T17:34:05.283Z",
       "series": [
         "CHF",
         "GBP",
@@ -75,7 +75,7 @@
     "fx-daily": {
       "file": "fx-daily.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:31:33.281Z",
+      "retrievedAt": "2026-11-01T17:34:05.574Z",
       "series": [
         "USD"
       ],
@@ -84,7 +84,7 @@
     "lending": {
       "file": "lending.json",
       "source": "ECB",
-      "retrievedAt": "2026-11-01T17:31:33.513Z",
+      "retrievedAt": "2026-11-01T17:34:05.829Z",
       "series": [
         "total"
       ],
