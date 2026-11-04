@@ -1,0 +1,49 @@
+# Fetches real ECB + Eurostat series and commits them as static snapshots.
+# Runs in GitHub's network because the dev container cannot reach these hosts
+# (accessible-data-dashboard/DECISIONS.md D-005). Trigger manually, or by
+# pushing a change to the fetch script on the working branch.
+name: Fetch data snapshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/exciting-ptolemy-j2k6bk]
+    paths:
+      - accessible-data-dashboard/scripts/fetch-data.mjs
+      - .github/workflows/fetch-data.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-data-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: accessible-data-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch snapshots
+        id: fetch
+        continue-on-error: true
+        run: node scripts/fetch-data.mjs
+      - name: Commit snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Update ECB/Eurostat data snapshots ($(date -u +%Y-%m-%d))"
+          git push
+      - name: Report partial failure
+        if: steps.fetch.outcome == 'failure'
+        run: |
+          echo "::warning::One or more datasets failed to fetch; see the 'Fetch snapshots' step log."
+          exit 1

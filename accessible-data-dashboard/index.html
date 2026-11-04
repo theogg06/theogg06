@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Accessible data dashboard prototype: euro area inflation, unemployment, lending and debt from ECB and Eurostat data." />
+    <title>Euro Area Monitor — accessible data dashboard (prototype)</title>
+    <script>
+      // Apply saved theme/density before first paint (no flash, no layout shift).
+      try {
+        var p = JSON.parse(localStorage.getItem('add.prefs.v1') || '{}');
+        var t = p.theme || 'system';
+        if (t === 'system') t = matchMedia('(prefers-contrast: more)').matches ? 'hc' : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+        document.documentElement.dataset.density = p.density || 'comfortable';
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
