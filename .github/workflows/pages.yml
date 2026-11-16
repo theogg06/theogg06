@@ -1,0 +1,46 @@
+# Deploys the prototype to GitHub Pages (stable URL for usability sessions).
+# One-time setup: repository Settings → Pages → Build and deployment →
+# Source: "GitHub Actions". URL: https://theogg06.github.io/theogg06/
+name: Deploy prototype to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['accessible-data-dashboard/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: accessible-data-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: accessible-data-dashboard/package-lock.json
+      - run: npm ci && npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: accessible-data-dashboard/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
