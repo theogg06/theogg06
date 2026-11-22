@@ -1,0 +1,419 @@
+<title>Project Village</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: illustrated village map (3×3 plots around a town square) beside a "today" ledger; houses open a detail sheet. Light = day, dark = night with lit windows. */
+:root{
+  --bg:#eef0e6; --ground:#dfe5cf; --plot:#cfd9b8; --road:#efe6d2; --road-edge:#d8cbb0;
+  --ink:#24291f; --muted:#5f6656; --line:#c9cfbb; --panel:#fbfbf6;
+  --wall:#f6efe0; --win:#fff6d6; --door:#6b4f3a; --shadow:rgba(36,41,31,.16);
+  --tree:#7f9a63; --tree2:#6a8752;
+  --r1:#c4643f; --r2:#3f7f8c; --r3:#8a5a9a; --r4:#b68a2e; --r5:#4d6fb0; --r6:#5c8a4a; --r7:#7a6a5a; --rs:#a2483a;
+  --needs:#d9822b; --needs-bg:#fbe9d3; --prog:#5c7f3f; --prog-bg:#e3eed6; --rev:#3d6fb6; --rev-bg:#dde7f6; --done:#6f7466; --done-bg:#e6e7e0; --paused:#8a8f86;
+  --accent:#2f5d50;
+  --f-display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a1f; --ground:#1b232a; --plot:#222d33; --road:#2c3439; --road-edge:#3a4348;
+  --ink:#e8ecdf; --muted:#a3ab9b; --line:#333d43; --panel:#192026;
+  --wall:#3b4146; --win:#ffd77a; --door:#2a2420; --shadow:rgba(0,0,0,.4);
+  --tree:#3d5a45; --tree2:#33503b;
+  --r1:#d47a55; --r2:#5aa0ad; --r3:#a97cba; --r4:#cfa34a; --r5:#7193d0; --r6:#7aa865; --r7:#9a8a78; --rs:#c2604f;
+  --needs:#f0a04b; --needs-bg:#3d2c18; --prog:#9cc27a; --prog-bg:#24331c; --rev:#8fb3ec; --rev-bg:#1e2c42; --done:#a3a89a; --done-bg:#272c27; --paused:#70766d;
+  --accent:#8cc5b3; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#141a1f; --ground:#1b232a; --plot:#222d33; --road:#2c3439; --road-edge:#3a4348;
+  --ink:#e8ecdf; --muted:#a3ab9b; --line:#333d43; --panel:#192026;
+  --wall:#3b4146; --win:#ffd77a; --door:#2a2420; --shadow:rgba(0,0,0,.4);
+  --tree:#3d5a45; --tree2:#33503b;
+  --r1:#d47a55; --r2:#5aa0ad; --r3:#a97cba; --r4:#cfa34a; --r5:#7193d0; --r6:#7aa865; --r7:#9a8a78; --rs:#c2604f;
+  --needs:#f0a04b; --needs-bg:#3d2c18; --prog:#9cc27a; --prog-bg:#24331c; --rev:#8fb3ec; --rev-bg:#1e2c42; --done:#a3a89a; --done-bg:#272c27; --paused:#70766d;
+  --accent:#8cc5b3; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.date{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.tally{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip b{font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.s-needs-you{background:var(--needs-bg);color:var(--ink)} .s-needs-you .dot{background:var(--needs)}
+.s-in-progress{background:var(--prog-bg);color:var(--ink)} .s-in-progress .dot{background:var(--prog)}
+.s-review{background:var(--rev-bg);color:var(--ink)} .s-review .dot{background:var(--rev)}
+.s-done{background:var(--done-bg);color:var(--ink)} .s-done .dot{background:var(--done)}
+.s-paused{background:var(--done-bg);color:var(--muted)} .s-paused .dot{background:var(--paused)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.map{background:var(--ground);border-radius:18px;padding:8px;position:relative;min-width:0}
+.map svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 8px 4px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.status-note{position:absolute;inset:auto 16px 16px 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px}
+
+/* map svg */
+.plot{fill:var(--plot)}
+.road{stroke:var(--road);stroke-width:26;stroke-linecap:round;fill:none}
+.road-edge{stroke:var(--road-edge);stroke-width:30;stroke-linecap:round;fill:none}
+.sign rect{fill:var(--panel);stroke:var(--line)}
+.sign text{font-family:var(--f-display);font-weight:700;font-size:15px;fill:var(--ink)}
+.sign .count{font-family:var(--f-mono);font-weight:500;font-size:11px;fill:var(--muted)}
+.house{cursor:pointer;outline:none}
+.house .wall{fill:var(--wall);stroke:var(--ink);stroke-opacity:.25}
+.house .door{fill:var(--door)}
+.house .win{fill:var(--win);stroke:var(--ink);stroke-opacity:.2}
+.house .shadow{fill:var(--shadow)}
+.house .label{font-family:var(--f-body);font-weight:600;font-size:12px;fill:var(--ink);text-anchor:middle}
+.house .halo{fill:none;stroke:var(--accent);stroke-width:2.5;opacity:0}
+.house:hover .halo,.house:focus-visible .halo,.house.sel .halo{opacity:1}
+.house.paused .win{fill:var(--paused)}
+.house.done .win{opacity:.75}
+.flag{fill:var(--needs)}
+.pole{stroke:var(--ink);stroke-width:1.5}
+.pulse{fill:none;stroke:var(--needs);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{from{transform:scale(.6);opacity:.9}to{transform:scale(1.8);opacity:0}}
+.smoke{fill:var(--muted);opacity:.0;animation:smoke 3.6s ease-in infinite}
+@keyframes smoke{0%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:.45}100%{opacity:0;transform:translate(6px,-22px) scale(1.4)}}
+.lantern{fill:var(--rev)}
+.tree{fill:var(--tree)} .tree2{fill:var(--tree2)}
+.trunk{fill:var(--door)}
+.meadow-text{font-family:var(--f-body);font-size:12px;fill:var(--muted);text-anchor:middle}
+.square{fill:var(--road)}
+@media (prefers-reduced-motion:reduce){.pulse,.smoke{animation:none}.smoke{opacity:.35}}
+
+/* ledger */
+.ledger{display:flex;flex-direction:column;gap:22px;min-width:0}
+.ledger h2{font-family:var(--f-display);font-weight:700;font-size:19px;margin:0 0 8px;display:flex;align-items:baseline;gap:8px}
+.ledger h2 small{font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ask{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--needs);border-radius:10px;padding:10px 12px}
+.ask .roof{width:14px;height:14px;margin-top:4px;clip-path:polygon(50% 0,100% 55%,100% 100%,0 100%,0 55%)}
+.ask button.link{all:unset;cursor:pointer;font-weight:600}
+.ask button.link:hover,.ask button.link:focus-visible{text-decoration:underline}
+.ask p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.tick{all:unset;cursor:pointer;font-size:12.5px;font-weight:500;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink);white-space:nowrap}
+.tick:hover,.tick:focus-visible{border-color:var(--accent);color:var(--accent)}
+.sugg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.sugg strong{display:block}
+.sugg p{margin:2px 0 6px;color:var(--muted);font-size:14px}
+.sugg button{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
+.sugg button:hover,.sugg button:focus-visible{text-decoration:underline}
+.digest p{margin:0 0 6px}
+.digest ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px}
+.digest li+li{margin-top:3px}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.foot{font-size:12.5px;color:var(--muted)}
+
+/* directory */
+.directory{margin-top:28px}
+.directory h2{font-family:var(--f-display);font-weight:700;font-size:19px;margin:0 0 10px}
+.districts{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.district h3{font-size:13px;font-family:var(--f-mono);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px;display:flex;align-items:center;gap:8px;color:var(--muted)}
+.district h3 i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.district ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.district button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px}
+.district button:hover,.district button:focus-visible{background:var(--panel)}
+.district .chip{padding:1px 8px;font-size:12px}
+
+/* detail sheet */
+dialog{border:none;padding:0;background:transparent;max-width:min(560px,calc(100vw - 32px));width:100%;color:var(--ink)}
+dialog::backdrop{background:rgba(20,26,31,.45)}
+.sheet{background:var(--panel);border-radius:16px;border:1px solid var(--line);padding:20px;display:flex;flex-direction:column;gap:14px;max-height:85vh;overflow:auto}
+.sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sheet h2{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;line-height:1.1}
+.sheet .where{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.close{all:unset;cursor:pointer;font-size:22px;line-height:1;padding:4px 8px;border-radius:8px;color:var(--muted)}
+.close:hover,.close:focus-visible{background:var(--bg);color:var(--ink)}
+.sheet p{margin:0}
+.box{border-radius:10px;padding:10px 12px}
+.box.needs{background:var(--needs-bg)}
+.box.next{background:var(--bg)}
+.box h4{margin:0 0 2px;font-size:12px;font-family:var(--f-mono);font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{all:unset;cursor:pointer;border-radius:10px;padding:9px 14px;font-weight:600;font-size:14px;border:1px solid var(--line)}
+.btn.primary{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+.btn:hover,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.55;cursor:default}
+.sessions{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13.5px}
+.sessions a{color:var(--accent)}
+.msg{font-size:13.5px;color:var(--muted)}
+.copyrow{display:flex;gap:8px;align-items:center}
+.copyrow code{flex:1;min-width:0;font-family:var(--f-mono);font-size:12.5px;background:var(--bg);padding:6px 8px;border-radius:8px;overflow-wrap:anywhere;user-select:all}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="date" id="today"></p>
+      <h1>Project Village</h1>
+    </div>
+    <div class="tally" id="tally" aria-label="Project status totals"></div>
+  </header>
+
+  <div class="layout">
+    <section class="map" aria-label="Village map">
+      <svg id="village" viewBox="0 0 960 900" role="group" aria-label="Map of your projects as houses, grouped by district"></svg>
+      <div class="legend" aria-hidden="true">
+        <span><i class="dot" style="background:var(--needs)"></i>Flag: needs you</span>
+        <span><i class="dot" style="background:var(--prog)"></i>Smoke: in progress</span>
+        <span><i class="dot" style="background:var(--rev)"></i>Lantern: ready to review</span>
+        <span><i class="dot" style="background:var(--done)"></i>Quiet: done</span>
+        <span><i class="dot" style="background:var(--paused)"></i>Dark windows: paused</span>
+      </div>
+      <div class="status-note" id="loadnote" hidden></div>
+    </section>
+
+    <aside class="ledger">
+      <section>
+        <h2>Needs you <small id="needsCount"></small></h2>
+        <ul class="list" id="needs"><li class="empty">Loading your village…</li></ul>
+      </section>
+      <section>
+        <h2>Suggested for today</h2>
+        <ul class="list" id="suggestions"><li class="empty">Suggestions arrive with the morning update.</li></ul>
+      </section>
+      <section class="digest">
+        <h2>Yesterday <small id="digestDate"></small></h2>
+        <div id="digest"><p class="empty">The morning summary appears here.</p></div>
+      </section>
+      <p class="foot" id="foot">Your assistant refreshes this page every morning at 07:47 (Bucharest time).</p>
+    </aside>
+  </div>
+
+  <section class="directory" aria-labelledby="dirh">
+    <h2 id="dirh">Every house, by district</h2>
+    <div class="districts" id="directory"></div>
+  </section>
+</div>
+
+<dialog id="sheet" aria-labelledby="sheetTitle"><div class="sheet" id="sheetBody"></div></dialog>
+
+<script>
+(() => {
+const STATUS = {
+  "needs-you":{label:"Needs you"}, "in-progress":{label:"In progress"},
+  "review":{label:"Ready to review"}, "done":{label:"Done"}, "paused":{label:"Paused"}
+};
+const DEFAULT_DISTRICTS = [
+  {id:"career",name:"Career Row",color:"r1"},{id:"a11y",name:"Accessibility Lane",color:"r2"},
+  {id:"decks",name:"Deck Quarter",color:"r3"},{id:"studio",name:"Studio Hill",color:"r4"},
+  {id:"web",name:"Web Street",color:"r5"},{id:"money",name:"Market Corner",color:"r6"},
+  {id:"workshop",name:"Workshop Yard",color:"r7"}
+];
+const SLOTS = [[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]]; // center [1,1] is the square
+const PW = 320, PH = 300;
+const st = {projects:[], meta:null, loaded:false, db:null, mcp:null, canWrite:false, sel:null};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+
+$("today").textContent = new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+function districts(){ return (st.meta && Array.isArray(st.meta.districts) && st.meta.districts.length) ? st.meta.districts : DEFAULT_DISTRICTS; }
+function dColor(id){ if(id==="square") return "var(--rs)"; const d = districts().find(x=>x.id===id); return d ? `var(--${d.color})` : "var(--r7)"; }
+function dName(id){ if(id==="square") return "Town square"; const d = districts().find(x=>x.id===id); return d ? d.name : "Outskirts"; }
+function byId(id){ return st.projects.find(p=>p.id===id); }
+function chip(status, extra=""){ const s = STATUS[status] || STATUS["in-progress"]; return `<span class="chip s-${esc(status)}"><i class="dot"></i>${extra}${esc(s.label)}</span>`; }
+
+/* ---------- map ---------- */
+function house(p, x, y, scale){
+  const st_ = p.status;
+  let marks = "";
+  if(st_==="needs-you") marks += `<circle class="pulse" cx="26" cy="-38" r="7"/><line class="pole" x1="20" y1="-14" x2="20" y2="-46"/><path class="flag" d="M20,-46 L36,-41 L20,-35Z"/>`;
+  if(st_==="in-progress") marks += `<circle class="smoke" cx="13" cy="-28" r="5"/><circle class="smoke" cx="13" cy="-28" r="5" style="animation-delay:1.2s"/><circle class="smoke" cx="13" cy="-28" r="5" style="animation-delay:2.4s"/>`;
+  if(st_==="review") marks += `<line class="pole" x1="-26" y1="26" x2="-26" y2="4"/><circle class="lantern" cx="-26" cy="2" r="5"/>`;
+  const label = esc(p.short || p.name);
+  return `<g class="house ${esc(st_)}${st.sel===p.id?" sel":""}" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="${esc(p.name)}: ${esc((STATUS[st_]||{}).label||"")}" transform="translate(${x},${y})">
+    <g transform="scale(${scale})">
+      <ellipse class="shadow" cx="2" cy="28" rx="32" ry="6"/>
+      <rect class="halo" x="-36" y="-36" width="72" height="72" rx="14"/>
+      <rect x="10" y="-26" width="7" height="14" fill="${dColor(p.district)}" opacity=".85"/>
+      <rect class="wall" x="-22" y="-4" width="44" height="30" rx="2"/>
+      <path d="M-29,-2 L0,-27 L29,-2Z" fill="${dColor(p.district)}"/>
+      <rect class="door" x="-5" y="10" width="10" height="16" rx="1.5"/>
+      <rect class="win" x="-17" y="4" width="8" height="8" rx="1"/>
+      <rect class="win" x="9" y="4" width="8" height="8" rx="1"/>
+      ${marks}
+    </g>
+    <text class="label" y="${30*scale+18}">${label}</text>
+  </g>`;
+}
+function tree(x,y,s=1){ return `<g transform="translate(${x},${y}) scale(${s})"><rect class="trunk" x="-2" y="2" width="4" height="9"/><circle class="tree" cx="0" cy="-4" r="10"/><circle class="tree2" cx="4" cy="-1" r="6"/></g>`; }
+
+function drawMap(){
+  const svg = $("village");
+  const ds = districts();
+  let out = "";
+  // roads
+  const roads = `M${PW},20 L${PW},880 M${PW*2},20 L${PW*2},880 M20,${PH} L940,${PH} M20,${PH*2} L940,${PH*2}`;
+  out += `<path class="road-edge" d="${roads}"/><path class="road" d="${roads}"/>`;
+  // plots
+  const drawn = [];
+  ds.slice(0,8).forEach((d,i) => {
+    const [c,r] = SLOTS[i]; const x0=c*PW, y0=r*PH;
+    out += `<rect class="plot" x="${x0+22}" y="${y0+22}" width="${PW-44}" height="${PH-44}" rx="18"/>`;
+    const hs = st.projects.filter(p=>p.district===d.id);
+    const cols = 3, cellW = (PW-60)/cols, cellH = 88, top = y0+108;
+    hs.slice(0,6).forEach((p,k) => {
+      const cx = x0+30+cellW*(k%cols)+cellW/2, cy = top+cellH*Math.floor(k/cols)+20;
+      const n = (p.sessions||[]).length; const scale = Math.min(1.3, 0.98 + n*0.07);
+      out += house(p, cx, cy, scale);
+    });
+    if(hs.length===0) out += `<text class="meadow-text" x="${x0+PW/2}" y="${y0+PH/2+10}">No houses yet</text>`;
+    const n = hs.length, nw = hs.filter(p=>p.status==="needs-you").length;
+    const countTxt = `${n} ${n===1?"house":"houses"}${nw?` · ${nw} need you`:""}`;
+    const w = Math.max(130, d.name.length*8.6+28, countTxt.length*7+28);
+    out += `<g class="sign"><rect x="${x0+34}" y="${y0+34}" width="${w}" height="40" rx="8"/><rect x="${x0+34}" y="${y0+34}" width="6" height="40" rx="3" fill="var(--${esc(d.color)})" stroke="none"/><text x="${x0+48}" y="${y0+53}">${esc(d.name)}</text><text class="count" x="${x0+48}" y="${y0+68}">${countTxt}</text></g>`;
+    drawn.push(d.id);
+  });
+  // leftover slot = open land
+  if(ds.length < 8){
+    const [c,r] = SLOTS[ds.length]; const x0=c*PW, y0=r*PH;
+    out += `<rect class="plot" x="${x0+22}" y="${y0+22}" width="${PW-44}" height="${PH-44}" rx="18" opacity=".55"/>`;
+    out += tree(x0+80,y0+90,1.3)+tree(x0+230,y0+80,1.1)+tree(x0+120,y0+210,1.2)+tree(x0+250,y0+220,1.4)+tree(x0+175,y0+140,.9);
+    out += `<text class="meadow-text" x="${x0+PW/2}" y="${y0+PH/2+8}">Open land: new projects settle here</text>`;
+  }
+  // town square
+  const sx = PW, sy = PH;
+  out += `<rect class="square" x="${sx+22}" y="${sy+22}" width="${PW-44}" height="${PH-44}" rx="40"/>`;
+  out += tree(sx+60,sy+70)+tree(sx+260,sy+70)+tree(sx+60,sy+235)+tree(sx+260,sy+235);
+  const hall = st.projects.find(p=>p.district==="square") || {id:"village",name:"Village hall",short:"Village hall",district:"square",status:"in-progress",sessions:[1,1,1,1,1]};
+  out += house(hall, sx+PW/2, sy+PH/2-14, 1.75);
+  // stray projects with unknown districts
+  const stray = st.projects.filter(p=>p.district!=="square" && !ds.slice(0,8).some(d=>d.id===p.district));
+  stray.slice(0,4).forEach((p,k)=>{ out += house(p, sx+70+k*60, sy+250, .7); });
+  svg.innerHTML = out;
+}
+
+/* ---------- ledger ---------- */
+function drawTally(){
+  const counts = {}; st.projects.filter(p=>p.district!=="square").forEach(p=>counts[p.status]=(counts[p.status]||0)+1);
+  const order = ["needs-you","in-progress","review","done","paused"];
+  $("tally").innerHTML = st.loaded ? order.filter(s=>counts[s]).map(s=>`<span class="chip s-${s}"><i class="dot"></i><b>${counts[s]}</b> ${STATUS[s].label}</span>`).join("") : "";
+}
+function drawNeeds(){
+  const asks = st.projects.filter(p=>p.needsYou);
+  $("needsCount").textContent = st.loaded ? `${asks.length} open` : "";
+  if(!st.loaded) return;
+  $("needs").innerHTML = asks.length ? asks.map(p=>`<li class="ask">
+      <i class="roof" style="background:${dColor(p.district)}"></i>
+      <div><button class="link" data-open="${esc(p.id)}">${esc(p.name)}</button><p>${esc(p.needsYou)}</p></div>
+      ${st.canWrite?`<button class="tick" data-tick="${esc(p.id)}" aria-label="Mark ${esc(p.name)} as handled">Done</button>`:""}
+    </li>`).join("") : `<li class="empty">Nothing is waiting on you. Enjoy the quiet.</li>`;
+}
+function drawSuggestions(){
+  const s = (st.meta && st.meta.suggestions) || [];
+  if(!st.loaded) return;
+  $("suggestions").innerHTML = s.length ? s.map(x=>`<li class="sugg"><strong>${esc(x.title)}</strong><p>${esc(x.why)}</p>${x.project&&byId(x.project)?`<button data-open="${esc(x.project)}">Open ${esc(byId(x.project).name)}</button>`:""}</li>`).join("") : `<li class="empty">No suggestions yet. They arrive with the morning update.</li>`;
+}
+function drawDigest(){
+  const d = st.meta && st.meta.digest;
+  if(!st.loaded || !d) return;
+  $("digestDate").textContent = d.date ? new Date(d.date+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}) : "";
+  $("digest").innerHTML = `<p>${esc(d.headline)}</p>${(d.items||[]).length?`<ul>${d.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`:""}`;
+  if(st.meta.updatedAt) $("foot").textContent = `Updated ${new Date(st.meta.updatedAt).toLocaleString(undefined,{weekday:"short",hour:"2-digit",minute:"2-digit"})}. Your assistant refreshes this page every morning at 07:47 (Bucharest time).`;
+}
+function drawDirectory(){
+  const ds = [{id:"square",name:"Town square",color:"rs"}, ...districts()];
+  $("directory").innerHTML = ds.map(d=>{
+    const hs = st.projects.filter(p=>p.district===d.id);
+    if(!hs.length) return "";
+    return `<div class="district"><h3><i style="background:var(--${esc(d.color)})"></i>${esc(d.name)}</h3><ul>${hs.map(p=>`<li><button data-open="${esc(p.id)}"><span>${esc(p.name)}</span>${chip(p.status)}</button></li>`).join("")}</ul></div>`;
+  }).join("") || `<p class="empty">Houses appear here once the village loads.</p>`;
+}
+function renderAll(){ drawMap(); drawTally(); drawNeeds(); drawSuggestions(); drawDigest(); drawDirectory(); if(st.sel && $("sheet").open) openSheet(st.sel, true); }
+
+/* ---------- detail sheet ---------- */
+function openSheet(id, refresh=false){
+  const p = byId(id); if(!p) return;
+  st.sel = id;
+  const sessions = (p.sessions||[]).map(s=>`<li><a href="https://claude.ai/code/${esc(s)}" target="_blank" rel="noopener">Open session ${esc(s.slice(-6))}</a></li>`).join("");
+  const assistant = st.meta && st.meta.assistantSession;
+  const prompt = `Open the house "${p.name}" (${p.id}) and let's work on it.`;
+  $("sheetBody").innerHTML = `
+    <header><div><p class="where">${esc(dName(p.district))}</p><h2 id="sheetTitle">${esc(p.name)}</h2></div><button class="close" id="closeSheet" aria-label="Close">×</button></header>
+    <div>${chip(p.status)}${p.updated?` <span class="msg">· last touched ${esc(new Date(p.updated).toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</span>`:""}</div>
+    <p>${esc(p.summary)}</p>
+    ${p.needsYou?`<div class="box needs"><h4>Needs you</h4><p>${esc(p.needsYou)}</p></div>`:""}
+    ${p.nextStep?`<div class="box next"><h4>Next step</h4><p>${esc(p.nextStep)}</p></div>`:""}
+    <div class="actions">
+      ${p.id!=="village"?`<button class="btn primary" id="workHere">Work on this here</button>`:""}
+      ${p.needsYou && st.canWrite?`<button class="btn" data-tick="${esc(p.id)}">Mark my part done</button>`:""}
+    </div>
+    <p class="msg" id="sendMsg" aria-live="polite"></p>
+    <div id="copyBox" hidden><p class="msg">Or paste this into your assistant chat:</p><div class="copyrow"><code id="promptText">${esc(prompt)}</code><button class="btn" id="copyBtn">Copy</button></div></div>
+    ${sessions?`<div><h4 class="where" style="margin:4px 0">Chats in this house</h4><ul class="sessions">${sessions}</ul></div>`:""}`;
+  const d = $("sheet"); if(!refresh && !d.open){ try{ d.showModal(); }catch(e){ d.setAttribute("open",""); } }
+  $("closeSheet").onclick = closeSheet;
+  const work = $("workHere");
+  if(work) work.onclick = async () => {
+    const msg = $("sendMsg");
+    if(!st.mcp || !assistant){ msg.textContent = "Sending from this page isn't available here."; $("copyBox").hidden = false; return; }
+    work.disabled = true; msg.textContent = "Sending to your assistant…";
+    try{
+      await st.mcp.callTool("Claude Code Remote","send_message",{session_id:assistant,message:`[From Project Village] ${prompt}`});
+      msg.textContent = "Sent. Switch to your assistant chat; it's picking this house up now.";
+    }catch(e){
+      const c = e && e.code;
+      msg.textContent = c==="server_not_connected" ? "Claude Code Remote isn't connected for this page. Use the text below instead."
+        : c==="not_in_manifest"||c==="approval_required"||c==="consent_required" ? "This page needs your OK to message the assistant. Try again and allow it, or use the text below."
+        : c==="blocked_by_policy" ? "Your organization blocks sending messages from pages. Use the text below instead."
+        : "The message may not have gone through. Check your assistant chat before sending again, or use the text below.";
+      $("copyBox").hidden = false; work.disabled = false;
+    }
+  };
+  const cb = $("copyBtn");
+  cb.onclick = () => { const t = $("promptText").textContent; const ok = () => cb.textContent = "Copied"; try{ navigator.clipboard.writeText(t).then(ok, selectPrompt); }catch(e){ selectPrompt(); } };
+  drawMap();
+}
+function selectPrompt(){ const r = document.createRange(); r.selectNodeContents($("promptText")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+function closeSheet(){ const d=$("sheet"); if(d.open){ try{ d.close(); }catch(e){ d.removeAttribute("open"); } } st.sel=null; drawMap(); }
+$("sheet").addEventListener("close", ()=>{ st.sel=null; drawMap(); });
+$("sheet").addEventListener("click", e => { if(e.target === $("sheet")) closeSheet(); });
+
+async function tick(id){
+  const p = byId(id); if(!p || !st.db) return;
+  try{
+    await st.db.doc("projects/"+id).update({needsYou:null, status: p.status==="needs-you" ? "in-progress" : p.status});
+  }catch(e){ st.canWrite = false; renderAll(); }
+}
+
+document.addEventListener("click", e => {
+  const o = e.target.closest("[data-open]"); if(o){ openSheet(o.dataset.open); return; }
+  const t = e.target.closest("[data-tick]"); if(t){ tick(t.dataset.tick); return; }
+  const h = e.target.closest(".house"); if(h){ openSheet(h.dataset.id); }
+});
+document.addEventListener("keydown", e => {
+  const h = e.target.closest && e.target.closest(".house");
+  if(h && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); openSheet(h.dataset.id); }
+});
+
+/* ---------- boot ---------- */
+renderAll();
+(async () => {
+  const note = $("loadnote");
+  const db = await use("db");
+  if(!db){ note.hidden=false; note.textContent="Village data isn't available in this view. Open the page on claude.ai while signed in."; return; }
+  st.db = db;
+  const timer = setTimeout(()=>{ note.hidden=false; note.textContent = st.loaded ? "Showing saved data; it may be out of date." : "Can't reach the village data yet. It will appear as soon as it connects."; }, 10000);
+  db.collection("projects").onSnapshot(snap => {
+    st.projects = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    st.loaded = true;
+    if(!snap.metadata.fromCache){ clearTimeout(timer); note.hidden = true; }
+    renderAll();
+  }, err => { clearTimeout(timer); note.hidden=false; note.textContent="The village data stopped updating. Reload the page to reconnect."; });
+  db.doc("meta/village").onSnapshot(s => { st.meta = s.exists ? s.data() : null; renderAll(); }, ()=>{});
+  const user = await use("user");
+  if(user){ try{ const c = await user.can("data.write"); st.canWrite = c !== false; }catch(e){ st.canWrite = true; } renderAll(); }
+  st.mcp = await use("mcp");
+})();
+})();
+</script>
