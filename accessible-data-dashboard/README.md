@@ -7,6 +7,7 @@ A portfolio project showing accessible data visualisation on real **ECB** and **
 | **Live prototype** | `https://theogg06.github.io/theogg06/` (after the one-time Pages setup below) |
 | **Design** | [Figma file](https://www.figma.com/design/rKEwC8areZnXnjiouJh22w) · [`design/SPEC.md`](design/SPEC.md) · [screenshots](design/screenshots/) |
 | **Research** | [`research/`](research/): desk research, interview kit, proto-personas and JTBD (**hypotheses**), usability [testing kit](research/testing/) |
+| **Presentation** | [Figma Slides: project presentation](https://www.figma.com/slides/rFBpQ6azPblpSyJNqZWsnr) |
 | **Docs** | [Accessibility statement](docs/ACCESSIBILITY-STATEMENT.md) · [Chart accessibility pattern guide](docs/CHART-ACCESSIBILITY-GUIDE.md) · [Case study (skeleton)](docs/CASE-STUDY.md) · [Decisions log](DECISIONS.md) |
 | **Status** | Prototype complete; automated tests pass; usability sessions not yet run |
 | **Screenshots** | [Light](docs/screenshots/app-overview-light.png) · [Dark](docs/screenshots/app-overview-dark.png) · [High contrast](docs/screenshots/app-overview-high-contrast.png) · [Forced colours](docs/screenshots/app-overview-forced-colors.png) · [320 px](docs/screenshots/app-overview-320.png) · [Drill-down](docs/screenshots/app-drilldown.png) · [Simulated states](docs/screenshots/app-states.png) |
@@ -60,7 +61,7 @@ Every snapshot stores its exact query `url`, `retrievedAt`, the source's last-up
 
 ## Licences
 
-- **Code:** your choice (add a `LICENSE` file).
+- **Code and documentation:** [MIT](LICENSE). The MIT licence covers this project's own code only. It does not change the terms of its dependencies, Highcharts in particular (below).
 - **Highcharts** is **free for non-commercial use only**. This portfolio prototype qualifies. Any commercial use needs a Highcharts licence ([highcharts.com/license](https://www.highcharts.com/license)). If that matters later, the chart layer is isolated in `src/charts/` so it can be replaced (for example by ECharts plus a custom keyboard layer; see D-002).
 - Data: see the table above.
 
