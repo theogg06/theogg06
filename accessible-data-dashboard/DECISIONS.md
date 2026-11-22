@@ -142,3 +142,6 @@ A short rationale for every non-obvious choice. Newest at the bottom of each pha
 
 **D-070 · The accessibility statement says "partially conformant, not yet verified by people with disabilities".**
 *Why:* Automated checks pass, but manual AT testing and usability sessions haven't run yet. Claiming full conformance would overstate the evidence.
+
+**D-071 · The project's code and docs are MIT-licensed; dependencies keep their own terms.**
+*Why:* MIT is short, widely understood and lets others reuse the chart accessibility patterns freely. It can't relicense Highcharts, which stays free for non-commercial use only, so the README says so next to the licence (see D-002).
